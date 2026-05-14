@@ -584,10 +584,16 @@ function renderBasic() {
   const w = Math.max(1, Math.round(basicImage.width * ratio));
   const h = Math.max(1, Math.round(basicImage.height * ratio));
   const { bin, preview } = toBinary(basicImage, thr, w, h);
-  basicOrig.width = w; basicOrig.height = h;
-  basicOrig.getContext('2d').putImageData(preview, 0, 0);
-  hideEmpty('basicOrigEmpty');
   const { s1, s2, W, H } = generateBasicShares(bin, w, h, scale);
+  // 原图预览放大到 share 尺寸（像素完美）
+  basicOrig.width = W; basicOrig.height = H;
+  const bTmp = document.createElement('canvas');
+  bTmp.width = w; bTmp.height = h;
+  bTmp.getContext('2d').putImageData(preview, 0, 0);
+  const bCtx = basicOrig.getContext('2d');
+  bCtx.imageSmoothingEnabled = false;
+  bCtx.drawImage(bTmp, 0, 0, W, H);
+  hideEmpty('basicOrigEmpty');
   basicS1.width = W; basicS1.height = H;
   basicS2.width = W; basicS2.height = H;
   basicOverlay.width = W; basicOverlay.height = H;
@@ -815,8 +821,14 @@ function renderColor() {
 
   const { s1, s2, W, H, preview } = generateColorShares(colorImage, w, h, scale, useDither, thr, exposure);
 
-  colorOrig.width = w; colorOrig.height = h;
-  colorOrig.getContext('2d').putImageData(preview, 0, 0);
+  // 原图预览像素完美放大到 share 尺寸，避免预览框显得小
+  colorOrig.width = W; colorOrig.height = H;
+  const oTmp = document.createElement('canvas');
+  oTmp.width = w; oTmp.height = h;
+  oTmp.getContext('2d').putImageData(preview, 0, 0);
+  const oCtx = colorOrig.getContext('2d');
+  oCtx.imageSmoothingEnabled = false;
+  oCtx.drawImage(oTmp, 0, 0, W, H);
   hideEmpty('colorOrigEmpty');
 
   colorS1.width = W; colorS1.height = H;
