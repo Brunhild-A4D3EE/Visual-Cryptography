@@ -243,7 +243,7 @@
   <div class="panel-content active" id="panel-basic">
     <div class="controls">
       <label>上传图片：<input type="file" id="basicFile" accept="image/*"></label>
-      <label>分辨率：<input type="range" id="basicRes" min="40" max="400" value="80" step="10"> <span class="value" id="basicResVal">80</span> px</label>
+      <label>分辨率：<input type="range" id="basicRes" min="40" max="2000" value="80" step="20"> <span class="value" id="basicResVal">80</span> px</label>
       <label>二值化阈值：<input type="range" id="basicThreshold" min="0" max="255" value="128"> <span class="value" id="basicThresholdVal">128</span></label>
       <label>放大倍数：<input type="range" id="basicScale" min="1" max="4" value="2"> <span class="value" id="basicScaleVal">2</span></label>
       <button id="basicGenBtn" disabled>生成 Shares</button>
@@ -301,7 +301,7 @@
       <label>上传彩色图：<input type="file" id="colorFile" accept="image/*"></label>
       <label><input type="checkbox" id="colorDither" checked> Bayer 抖动（保留中间色调）</label>
       <label>阈值（关闭抖动时）：<input type="range" id="colorThreshold" min="1" max="254" value="128"> <span class="value" id="colorThresholdVal">128</span></label>
-      <label>秘密分辨率：<input type="range" id="colorRes" min="40" max="400" value="120" step="10"> <span class="value" id="colorResVal">120</span> px</label>
+      <label>秘密分辨率：<input type="range" id="colorRes" min="40" max="2000" value="120" step="20"> <span class="value" id="colorResVal">120</span> px</label>
       <label>曝光（浅 ←→ 浓）：<input type="range" id="colorExposure" min="-50" max="50" value="0" step="5"> <span class="value" id="colorExposureVal">0</span></label>
       <label>放大倍数：<input type="range" id="colorScale" min="1" max="3" value="2"> <span class="value" id="colorScaleVal">2</span></label>
       <label>打印尺寸：<input type="range" id="colorPrintMm" min="60" max="200" value="100" step="20"> <span class="value" id="colorPrintMmVal">100</span> mm</label>
@@ -356,7 +356,7 @@
     <div class="controls">
       <label>子像素边长 N：<input type="range" id="htSide" min="3" max="8" value="4"> <span class="value" id="htSideVal">4</span></label>
       <label>SEP 强度 K：<input type="range" id="htK" min="1" max="10" value="2"> <span class="value" id="htKVal">2</span> 对/pair</label>
-      <label>秘密分辨率：<input type="range" id="htRes" min="40" max="400" value="120" step="10"> <span class="value" id="htResVal">120</span> px</label>
+      <label>秘密分辨率：<input type="range" id="htRes" min="40" max="2000" value="120" step="20"> <span class="value" id="htResVal">120</span> px</label>
       <label>打印尺寸：<input type="range" id="htPrintMm" min="80" max="200" value="140" step="20"> <span class="value" id="htPrintMmVal">140</span> mm</label>
       <label><input type="checkbox" id="htRegMark"> 加四角对位标记 +</label>
       <button id="htGenBtn" disabled>已上传 0/3 — 再上传 3 张</button>
