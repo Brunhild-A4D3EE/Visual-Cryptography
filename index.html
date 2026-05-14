@@ -230,6 +230,7 @@
       <label>上传彩色图：<input type="file" id="colorFile" accept="image/*"></label>
       <label><input type="checkbox" id="colorDither" checked> Bayer 抖动（保留中间色调）</label>
       <label>阈值（关闭抖动时）：<input type="range" id="colorThreshold" min="1" max="254" value="128"> <span class="value" id="colorThresholdVal">128</span></label>
+      <label>秘密分辨率：<input type="range" id="colorRes" min="40" max="240" value="120" step="10"> <span class="value" id="colorResVal">120</span> px</label>
       <label>放大倍数：<input type="range" id="colorScale" min="1" max="3" value="2"> <span class="value" id="colorScaleVal">2</span></label>
       <label>打印尺寸：<input type="range" id="colorPrintMm" min="60" max="200" value="100" step="20"> <span class="value" id="colorPrintMmVal">100</span> mm</label>
       <label><input type="checkbox" id="colorRegMark"> 加四角对位标记 +</label>
@@ -745,9 +746,11 @@ const colorDemoBtn = document.getElementById('colorDemoBtn');
 const colorDither = document.getElementById('colorDither');
 const colorThreshold = document.getElementById('colorThreshold');
 const colorScale = document.getElementById('colorScale');
+const colorRes = document.getElementById('colorRes');
 const colorPrintMm = document.getElementById('colorPrintMm');
 const colorThresholdVal = document.getElementById('colorThresholdVal');
 const colorScaleVal = document.getElementById('colorScaleVal');
+const colorResVal = document.getElementById('colorResVal');
 const colorPrintMmVal = document.getElementById('colorPrintMmVal');
 
 const colorOrig = document.getElementById('colorOrig');
@@ -780,13 +783,15 @@ colorDemoBtn.addEventListener('click', () => {
   img.src = c.toDataURL();
 });
 
-[colorThreshold, colorScale, colorPrintMm].forEach(el => el.addEventListener('input', () => {
+[colorThreshold, colorScale, colorRes, colorPrintMm].forEach(el => el.addEventListener('input', () => {
   colorThresholdVal.textContent = colorThreshold.value;
   colorScaleVal.textContent = colorScale.value;
+  colorResVal.textContent = colorRes.value;
   colorPrintMmVal.textContent = colorPrintMm.value;
 }));
 colorThreshold.addEventListener('change', () => colorImage && renderColor());
 colorScale.addEventListener('change', () => colorImage && renderColor());
+colorRes.addEventListener('change', () => colorImage && renderColor());
 colorDither.addEventListener('change', () => colorImage && renderColor());
 colorGenBtn.addEventListener('click', () => colorImage && renderColor());
 
@@ -795,7 +800,7 @@ function renderColor() {
   const useDither = colorDither.checked;
   const thr = parseInt(colorThreshold.value, 10);
   const scale = parseInt(colorScale.value, 10);
-  const maxSize = 80;
+  const maxSize = parseInt(colorRes.value, 10);
   const ratio = Math.min(1, maxSize / Math.max(colorImage.width, colorImage.height));
   const w = Math.max(1, Math.round(colorImage.width * ratio));
   const h = Math.max(1, Math.round(colorImage.height * ratio));
