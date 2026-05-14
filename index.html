@@ -92,6 +92,46 @@
   }
   button.ghost:hover { border-color: var(--accent); color: var(--accent); }
 
+  .preset-chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-left: 4px;
+  }
+  .preset-chip {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .preset-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .preset-chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255,122,69,0.12);
+  }
+
+  .size-hint-row {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .size-hint-row b { color: var(--accent); font-weight: 600; }
+  .size-hint-row .ref { color: #666; font-size: 11px; margin-left: 8px; }
+
   .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
   @media (max-width: 900px) {
@@ -252,6 +292,12 @@
       <button class="ghost" id="basicDemoBtn3">示例：QR 风格图标</button>
     </div>
 
+    <div class="size-hint-row" id="basicSizeHint">
+      <span>📐 预览 share 实际尺寸：<b id="basicShareSizeText">—</b></span>
+      <span>🖨️ 打印 @ 300 DPI ≈ <b id="basicPrintSizeText">—</b></span>
+      <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
+    </div>
+
     <div class="grid-2">
       <div class="card">
         <h3>原图（二值化）</h3>
@@ -304,7 +350,14 @@
       <label>秘密分辨率：<input type="range" id="colorRes" min="40" max="2000" value="120" step="20"> <span class="value" id="colorResVal">120</span> px</label>
       <label>曝光（浅 ←→ 浓）：<input type="range" id="colorExposure" min="-50" max="50" value="0" step="5"> <span class="value" id="colorExposureVal">0</span></label>
       <label>放大倍数：<input type="range" id="colorScale" min="1" max="3" value="2"> <span class="value" id="colorScaleVal">2</span></label>
-      <label>打印尺寸：<input type="range" id="colorPrintMm" min="60" max="200" value="100" step="20"> <span class="value" id="colorPrintMmVal">100</span> mm</label>
+      <label>打印尺寸：<input type="range" id="colorPrintMm" min="60" max="320" value="148" step="2"> <span class="value" id="colorPrintMmVal">148</span> mm
+        <span class="preset-chips">
+          <button class="preset-chip" data-color-preset="90">名片 90</button>
+          <button class="preset-chip" data-color-preset="148">明信片 148</button>
+          <button class="preset-chip" data-color-preset="210">色卡 210</button>
+          <button class="preset-chip" data-color-preset="310">文件夹 310</button>
+        </span>
+      </label>
       <label><input type="checkbox" id="colorRegMark"> 加四角对位标记 +</label>
       <button id="colorGenBtn" disabled>生成彩色 Shares</button>
       <button id="colorPrintAllBtn" disabled>导出 2 张打印 PNG（300 DPI 透明）</button>
@@ -313,6 +366,12 @@
 
     <div style="background: #2a1a10; border: 1px solid #ff7a45; border-left: 4px solid #ff7a45; border-radius: 6px; padding: 12px 16px; margin: 12px 0 16px; font-size: 13px; color: #e8e8ec;">
       ⚠️ <b>数字叠加要用 Multiply 混合模式</b>：CMYK share 是减色油墨模型——物理叠加时油墨吸光，相当于 RGB 通道取 MIN。但 Photoshop / Figma 默认是 Normal 混合（上层覆盖下层），叠加效果会错。把上层 share 的混合模式改成 <b>Multiply (正片叠底)</b>，结果才对。打印到透明胶片物理叠加就没这个问题（油墨真的会减色）。
+    </div>
+
+    <div class="size-hint-row" id="colorSizeHint">
+      <span>📐 预览 share 实际尺寸：<b id="colorShareSizeText">—</b></span>
+      <span>🖨️ 打印 @ 300 DPI ≈ <b id="colorPrintSizeText">—</b></span>
+      <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
     </div>
 
     <div class="grid-2">
@@ -357,12 +416,25 @@
       <label>子像素边长 N：<input type="range" id="htSide" min="3" max="8" value="4"> <span class="value" id="htSideVal">4</span></label>
       <label>SEP 强度 K：<input type="range" id="htK" min="1" max="10" value="2"> <span class="value" id="htKVal">2</span> 对/pair</label>
       <label>秘密分辨率：<input type="range" id="htRes" min="40" max="2000" value="120" step="20"> <span class="value" id="htResVal">120</span> px</label>
-      <label>打印尺寸：<input type="range" id="htPrintMm" min="80" max="200" value="140" step="20"> <span class="value" id="htPrintMmVal">140</span> mm</label>
+      <label>打印尺寸：<input type="range" id="htPrintMm" min="60" max="320" value="148" step="2"> <span class="value" id="htPrintMmVal">148</span> mm
+        <span class="preset-chips">
+          <button class="preset-chip" data-ht-preset="90">名片 90</button>
+          <button class="preset-chip" data-ht-preset="148">明信片 148</button>
+          <button class="preset-chip" data-ht-preset="210">色卡 210</button>
+          <button class="preset-chip" data-ht-preset="310">文件夹 310</button>
+        </span>
+      </label>
       <label><input type="checkbox" id="htRegMark"> 加四角对位标记 +</label>
       <button id="htGenBtn" disabled>已上传 0/3 — 再上传 3 张</button>
       <button id="htPrintAllBtn" disabled>导出 3 张打印 PNG（300 DPI 透明）</button>
       <button class="ghost" id="htDemoBtn">用示例图（★ ♥ ☀）</button>
       <span id="htParamInfo" style="color: var(--muted); font-size: 12px;"></span>
+    </div>
+
+    <div class="size-hint-row" id="htSizeHint">
+      <span>📐 预览 share 实际尺寸：<b id="htShareSizeText">—</b></span>
+      <span>🖨️ 打印 @ 300 DPI ≈ <b id="htPrintSizeText">—</b></span>
+      <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
     </div>
 
     <h3 style="margin: 0 0 10px; font-size: 14px; color: var(--muted);">① 上传三张秘密图（每张对应一对 share 叠加时显形）</h3>
@@ -636,15 +708,28 @@ document.getElementById('basicDemoBtn3').addEventListener('click', () => {
     return c.toDataURL();
   });
 });
+// px @ 300 DPI → mm
+function pxToMm(px) { return (px * 25.4 / 300).toFixed(1); }
+
+function updateBasicSizeHint() {
+  const res = parseInt(basicRes.value, 10);
+  const scale = parseInt(basicScale.value, 10);
+  const share = res * 2 * scale;
+  document.getElementById('basicShareSizeText').textContent = `${share} × ${share} px`;
+  document.getElementById('basicPrintSizeText').textContent = `${pxToMm(share)} × ${pxToMm(share)} mm`;
+}
+
 [basicThreshold, basicScale, basicRes].forEach(el => el.addEventListener('input', () => {
   basicThresholdVal.textContent = basicThreshold.value;
   basicScaleVal.textContent = basicScale.value;
   basicResVal.textContent = basicRes.value;
+  updateBasicSizeHint();
 }));
 basicThreshold.addEventListener('change', () => basicImage && renderBasic());
 basicScale.addEventListener('change', () => basicImage && renderBasic());
 basicRes.addEventListener('change', () => basicImage && renderBasic());
 basicGenBtn.addEventListener('click', () => basicImage && renderBasic());
+updateBasicSizeHint();
 
 function renderBasic() {
   if (!basicImage) return;
@@ -865,12 +950,38 @@ colorDemoBtn.addEventListener('click', () => {
   img.src = c.toDataURL();
 });
 
+function updateColorSizeHint() {
+  const res = parseInt(colorRes.value, 10);
+  const scale = parseInt(colorScale.value, 10);
+  const share = res * 2 * scale;
+  document.getElementById('colorShareSizeText').textContent = `${share} × ${share} px`;
+  document.getElementById('colorPrintSizeText').textContent = `${pxToMm(share)} × ${pxToMm(share)} mm`;
+}
+
+function highlightColorPreset() {
+  const mm = parseInt(colorPrintMm.value, 10);
+  document.querySelectorAll('[data-color-preset]').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.colorPreset, 10) === mm);
+  });
+}
+
+document.querySelectorAll('[data-color-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mm = parseInt(btn.dataset.colorPreset, 10);
+    colorPrintMm.value = mm;
+    colorPrintMmVal.textContent = mm;
+    highlightColorPreset();
+  });
+});
+
 [colorThreshold, colorScale, colorRes, colorExposure, colorPrintMm].forEach(el => el.addEventListener('input', () => {
   colorThresholdVal.textContent = colorThreshold.value;
   colorScaleVal.textContent = colorScale.value;
   colorResVal.textContent = colorRes.value;
   colorExposureVal.textContent = colorExposure.value;
   colorPrintMmVal.textContent = colorPrintMm.value;
+  updateColorSizeHint();
+  highlightColorPreset();
 }));
 colorThreshold.addEventListener('change', () => colorImage && renderColor());
 colorScale.addEventListener('change', () => colorImage && renderColor());
@@ -878,6 +989,8 @@ colorRes.addEventListener('change', () => colorImage && renderColor());
 colorExposure.addEventListener('change', () => colorImage && renderColor());
 colorDither.addEventListener('change', () => colorImage && renderColor());
 colorGenBtn.addEventListener('click', () => colorImage && renderColor());
+updateColorSizeHint();
+highlightColorPreset();
 
 function renderColor() {
   if (!colorImage) return;
@@ -1193,16 +1306,44 @@ function updateHtParamInfo() {
   htParamInfo.textContent = `单 pair 信号对比 ${contrastPct}%（K_max = ${Kmax}）`;
 }
 
+function updateHtSizeHint() {
+  const res = parseInt(htRes.value, 10);
+  const N = parseInt(htSide.value, 10);
+  const share = res * N;
+  document.getElementById('htShareSizeText').textContent = `${share} × ${share} px`;
+  document.getElementById('htPrintSizeText').textContent = `${pxToMm(share)} × ${pxToMm(share)} mm`;
+}
+
+function highlightHtPreset() {
+  const mm = parseInt(htPrintMm.value, 10);
+  document.querySelectorAll('[data-ht-preset]').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.htPreset, 10) === mm);
+  });
+}
+
+document.querySelectorAll('[data-ht-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mm = parseInt(btn.dataset.htPreset, 10);
+    htPrintMm.value = mm;
+    htPrintMmVal.textContent = mm;
+    highlightHtPreset();
+  });
+});
+
 [htSide, htK, htRes, htPrintMm].forEach(el => el.addEventListener('input', () => {
   htSideVal.textContent = htSide.value;
   htKVal.textContent = htK.value;
   htResVal.textContent = htRes.value;
   htPrintMmVal.textContent = htPrintMm.value;
   updateHtParamInfo();
+  updateHtSizeHint();
+  highlightHtPreset();
 }));
 [htSide, htK, htRes].forEach(el => el.addEventListener('change', () => renderHt()));
 htGenBtn.addEventListener('click', () => renderHt());
 updateHtParamInfo();
+updateHtSizeHint();
+highlightHtPreset();
 
 document.querySelectorAll('input[data-ht]').forEach(input => {
   input.addEventListener('change', (e) => {
