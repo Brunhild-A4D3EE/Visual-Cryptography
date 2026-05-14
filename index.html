@@ -231,6 +231,7 @@
       <label><input type="checkbox" id="colorDither" checked> Bayer 抖动（保留中间色调）</label>
       <label>阈值（关闭抖动时）：<input type="range" id="colorThreshold" min="1" max="254" value="128"> <span class="value" id="colorThresholdVal">128</span></label>
       <label>秘密分辨率：<input type="range" id="colorRes" min="40" max="240" value="120" step="10"> <span class="value" id="colorResVal">120</span> px</label>
+      <label>曝光（浅 ←→ 浓）：<input type="range" id="colorExposure" min="-50" max="50" value="0" step="5"> <span class="value" id="colorExposureVal">0</span></label>
       <label>放大倍数：<input type="range" id="colorScale" min="1" max="3" value="2"> <span class="value" id="colorScaleVal">2</span></label>
       <label>打印尺寸：<input type="range" id="colorPrintMm" min="60" max="200" value="100" step="20"> <span class="value" id="colorPrintMmVal">100</span> mm</label>
       <label><input type="checkbox" id="colorRegMark"> 加四角对位标记 +</label>
@@ -652,7 +653,8 @@ function rasterizeImage(image, w, h) {
 }
 
 // 计算 CMYK 四通道二值半色调位图
-function cmykHalftone(image, threshold, w, h, useDither) {
+// exposure: -0.5 ~ +0.5 — 同等加给 4 个通道值，正数→更浓油墨，负数→更浅。Bayer 和阈值模式都生效。
+function cmykHalftone(image, threshold, w, h, useDither, exposure = 0) {
   const { imageData } = rasterizeImage(image, w, h);
   const data = imageData.data;
   // 4 个 Uint8Array, 对应 C, M, Y, K
@@ -665,7 +667,8 @@ function cmykHalftone(image, threshold, w, h, useDither) {
       const [c_, m_, y_, k_] = rgbToCmyk(data[i], data[i+1], data[i+2]);
       const cmykArr = [c_, m_, y_, k_];
       for (let ci = 0; ci < 4; ci++) {
-        const v = cmykArr[ci];
+        // 加曝光偏移并 clamp 到 [0, 1]
+        const v = Math.max(0, Math.min(1, cmykArr[ci] + exposure));
         channels[ci][y * w + x] = useDither ? bayerThreshold(v, x, y, ci) : (v > t ? 1 : 0);
       }
       // 预览：把二值化后的 CMYK 还原成 RGB 供显示
@@ -687,14 +690,14 @@ function cmykHalftone(image, threshold, w, h, useDither) {
 //   - 通道值=1（有 ink）：S1、S2 互补模式
 //   - 通道值=0（无 ink）：S1、S2 相同模式
 // 然后把 4 个通道的二值位图当成 4 种油墨，按 CMYK→RGB 渲染到彩色 share。
-function generateColorShares(image, w, h, scale, useDither, threshold) {
+function generateColorShares(image, w, h, scale, useDither, threshold, exposure = 0) {
   const W = w * 2 * scale, H = h * 2 * scale;
   const s1 = new ImageData(W, H), s2 = new ImageData(W, H);
   for (let i = 0; i < s1.data.length; i += 4) {
     s1.data[i] = s1.data[i+1] = s1.data[i+2] = 255; s1.data[i+3] = 255;
     s2.data[i] = s2.data[i+1] = s2.data[i+2] = 255; s2.data[i+3] = 255;
   }
-  const { channels, preview } = cmykHalftone(image, threshold, w, h, useDither);
+  const { channels, preview } = cmykHalftone(image, threshold, w, h, useDither, exposure);
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -747,10 +750,12 @@ const colorDither = document.getElementById('colorDither');
 const colorThreshold = document.getElementById('colorThreshold');
 const colorScale = document.getElementById('colorScale');
 const colorRes = document.getElementById('colorRes');
+const colorExposure = document.getElementById('colorExposure');
 const colorPrintMm = document.getElementById('colorPrintMm');
 const colorThresholdVal = document.getElementById('colorThresholdVal');
 const colorScaleVal = document.getElementById('colorScaleVal');
 const colorResVal = document.getElementById('colorResVal');
+const colorExposureVal = document.getElementById('colorExposureVal');
 const colorPrintMmVal = document.getElementById('colorPrintMmVal');
 
 const colorOrig = document.getElementById('colorOrig');
@@ -783,15 +788,17 @@ colorDemoBtn.addEventListener('click', () => {
   img.src = c.toDataURL();
 });
 
-[colorThreshold, colorScale, colorRes, colorPrintMm].forEach(el => el.addEventListener('input', () => {
+[colorThreshold, colorScale, colorRes, colorExposure, colorPrintMm].forEach(el => el.addEventListener('input', () => {
   colorThresholdVal.textContent = colorThreshold.value;
   colorScaleVal.textContent = colorScale.value;
   colorResVal.textContent = colorRes.value;
+  colorExposureVal.textContent = colorExposure.value;
   colorPrintMmVal.textContent = colorPrintMm.value;
 }));
 colorThreshold.addEventListener('change', () => colorImage && renderColor());
 colorScale.addEventListener('change', () => colorImage && renderColor());
 colorRes.addEventListener('change', () => colorImage && renderColor());
+colorExposure.addEventListener('change', () => colorImage && renderColor());
 colorDither.addEventListener('change', () => colorImage && renderColor());
 colorGenBtn.addEventListener('click', () => colorImage && renderColor());
 
@@ -801,11 +808,12 @@ function renderColor() {
   const thr = parseInt(colorThreshold.value, 10);
   const scale = parseInt(colorScale.value, 10);
   const maxSize = parseInt(colorRes.value, 10);
+  const exposure = parseInt(colorExposure.value, 10) / 100; // -0.5 ~ +0.5
   const ratio = Math.min(1, maxSize / Math.max(colorImage.width, colorImage.height));
   const w = Math.max(1, Math.round(colorImage.width * ratio));
   const h = Math.max(1, Math.round(colorImage.height * ratio));
 
-  const { s1, s2, W, H, preview } = generateColorShares(colorImage, w, h, scale, useDither, thr);
+  const { s1, s2, W, H, preview } = generateColorShares(colorImage, w, h, scale, useDither, thr, exposure);
 
   colorOrig.width = w; colorOrig.height = h;
   colorOrig.getContext('2d').putImageData(preview, 0, 0);
@@ -837,6 +845,7 @@ document.getElementById('colorPrintAllBtn').addEventListener('click', () => {
   const thr = parseInt(colorThreshold.value, 10);
   const scale = parseInt(colorScale.value, 10);
   const printMm = parseInt(colorPrintMm.value, 10);
+  const exposure = parseInt(colorExposure.value, 10) / 100;
   const includeRegMarks = document.getElementById('colorRegMark').checked;
   const targetPx = Math.round(printMm * 300 / 25.4);
   // generateColorShares: W = w * 2 * scale，所以 w = targetPx / (2*scale)
@@ -848,7 +857,7 @@ document.getElementById('colorPrintAllBtn').addEventListener('click', () => {
   setTimeout(() => {
     try {
       // 只跑一次算法 → 2 张 share 共享同一组 SEP pattern + 噪声
-      const { s1, s2, W, H } = generateColorShares(colorImage, w, h, scale, useDither, thr);
+      const { s1, s2, W, H } = generateColorShares(colorImage, w, h, scale, useDither, thr, exposure);
       const tag = includeRegMarks ? '_withmarks' : '';
       [['s1', s1], ['s2', s2]].forEach(([which, imgData], i) => {
         setTimeout(() => {
