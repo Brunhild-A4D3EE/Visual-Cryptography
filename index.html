@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>视觉密码学演示 Visual Cryptography</title>
+<style>
+  :root {
+    --bg: #0f0f12;
+    --panel: #1a1a20;
+    --border: #2a2a33;
+    --text: #e8e8ec;
+    --muted: #9a9aa6;
+    --accent: #ff7a45;
+    --accent-hover: #ff9466;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.5;
+  }
+  .container { max-width: 1300px; margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 24px; }
+  .sub { color: var(--muted); margin-bottom: 18px; font-size: 14px; }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+  }
+  .tab {
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    font-family: inherit;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover { color: var(--text); }
+
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+  }
+  .controls label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .controls input[type="range"] { width: 140px; }
+  .controls input[type="file"] { color: var(--muted); font-size: 13px; max-width: 220px; }
+  button {
+    background: var(--accent);
+    color: #1a1a20;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .card h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+  .card .desc { color: var(--muted); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
+  .canvas-wrap {
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    position: relative;
+  }
+  canvas { display: block; max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+  .card .actions { margin-top: 10px; display: flex; gap: 8px; }
+  .card .upload-row { margin-bottom: 10px; }
+  .card .upload-row input[type="file"] {
+    color: var(--muted);
+    font-size: 12px;
+    width: 100%;
+  }
+
+  .info {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .info b { color: var(--text); }
+  .info code { background: #000; padding: 1px 5px; border-radius: 3px; color: var(--accent); font-size: 12px; }
+  .empty { color: #555; font-size: 12px; padding: 30px; text-align: center; }
+  .value { color: var(--accent); font-variant-numeric: tabular-nums; min-width: 32px; display: inline-block; text-align: right; }
+
+  .panel-content { display: none; }
+  .panel-content.active { display: block; }
+
+  .pair-label {
+    display: inline-block;
+    background: #2a2a33;
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>视觉密码学演示 / Visual Cryptography</h1>
+  <div class="sub">用纯物理叠加（黑覆盖白）就能"解密"图像——无需任何计算。</div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="basic">2-out-of-2（基础版）</button>
+    <button class="tab" data-tab="halftone">3-shares / 3-secrets（可打印）</button>
+    <button class="tab" data-tab="color">彩色 CMYK（beta）</button>
+  </div>
+
+  <!-- ============== TAB 1: BASIC 2-out-of-2 ============== -->
+  <div class="panel-content active" id="panel-basic">
+    <div class="controls">
+      <label>上传图片：<input type="file" id="basicFile" accept="image/*"></label>
+      <label>分辨率：<input type="range" id="basicRes" min="40" max="240" value="80" step="10"> <span class="value" id="basicResVal">80</span> px</label>
+      <label>二值化阈值：<input type="range" id="basicThreshold" min="0" max="255" value="128"> <span class="value" id="basicThresholdVal">128</span></label>
+      <label>放大倍数：<input type="range" id="basicScale" min="1" max="4" value="2"> <span class="value" id="basicScaleVal">2</span></label>
+      <button id="basicGenBtn" disabled>生成 Shares</button>
+      <button class="ghost" id="basicDemoBtn">示例：密 SECRET</button>
+      <button class="ghost" id="basicDemoBtn2">示例：心形 ♥</button>
+      <button class="ghost" id="basicDemoBtn3">示例：QR 风格图标</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>原图（二值化）</h3>
+        <div class="desc">黑色=要隐藏的内容</div>
+        <div class="canvas-wrap"><canvas id="basicOrig"></canvas><div class="empty" id="basicOrigEmpty">先上传图片</div></div>
+      </div>
+      <div class="card">
+        <h3>叠加结果 S1 + S2</h3>
+        <div class="desc">两张 share 物理叠加 → 可见原图</div>
+        <div class="canvas-wrap"><canvas id="basicOverlay"></canvas><div class="empty" id="basicOverlayEmpty">生成后显示</div></div>
+      </div>
+      <div class="card">
+        <h3>Share 1</h3>
+        <div class="desc">单独看是纯噪声</div>
+        <div class="canvas-wrap"><canvas id="basicS1"></canvas><div class="empty" id="basicS1Empty">—</div></div>
+        <div class="actions"><button class="ghost" data-basic-download="s1">下载透明 PNG</button></div>
+      </div>
+      <div class="card">
+        <h3>Share 2</h3>
+        <div class="desc">单独看也是纯噪声</div>
+        <div class="canvas-wrap"><canvas id="basicS2"></canvas><div class="empty" id="basicS2Empty">—</div></div>
+        <div class="actions"><button class="ghost" data-basic-download="s2">下载透明 PNG</button></div>
+      </div>
+    </div>
+
+    <div class="info">
+      <b>名字由来——"2-out-of-2" 是什么意思？</b><br>
+      这是密码学里"门限方案"的标准记号 <code>(k, n)</code>-threshold：n 张 share 中任意 k 张就能解。所以：<br>
+      <ul style="margin: 6px 0 12px 18px; padding: 0;">
+        <li><b>(2, 2)</b> = "2-out-of-2"：共 2 张，必须凑齐才能解（本 tab）</li>
+        <li><b>(2, 3)</b> = "2-out-of-3"：共 3 张，任意 2 张就能解（多秘密 tab 的变体）</li>
+        <li><b>(k, n)</b>：通用情况，少于 k 张完全无信息</li>
+      </ul>
+      这是 Naor-Shamir 1994 论文里建立的命名。<br>
+      <br>
+      <b>本 tab 的算法：</b>每个原像素 → 2×2 子像素块。随机选一个"2 黑 2 白"的模式（共 6 种）：<br>
+      • 原像素是<b>白</b>：S1、S2 用<b>相同</b>模式 → 叠加 = 2 黑 2 白（50% 灰）<br>
+      • 原像素是<b>黑</b>：S1、S2 用<b>互补</b>模式 → 叠加 = 4 个全黑（100% 黑）<br>
+      <br>
+      因为每个 share 的局部模式是均匀随机的（每像素是 6 种模式之一），单张完全看不出原图——这是 <b>信息论意义上的完美保密</b>（等同于 one-time pad 的强度）。
+    </div>
+  </div>
+
+  <!-- ============== TAB 2: COLOR CMYK ============== -->
+  <div class="panel-content" id="panel-color">
+    <div class="controls">
+      <label>上传彩色图：<input type="file" id="colorFile" accept="image/*"></label>
+      <label><input type="checkbox" id="colorDither" checked> Bayer 抖动（保留中间色调）</label>
+      <label>阈值（关闭抖动时）：<input type="range" id="colorThreshold" min="1" max="254" value="128"> <span class="value" id="colorThresholdVal">128</span></label>
+      <label>放大倍数：<input type="range" id="colorScale" min="1" max="3" value="2"> <span class="value" id="colorScaleVal">2</span></label>
+      <label>打印尺寸：<input type="range" id="colorPrintMm" min="60" max="200" value="100" step="20"> <span class="value" id="colorPrintMmVal">100</span> mm</label>
+      <label><input type="checkbox" id="colorRegMark"> 加四角对位标记 +</label>
+      <button id="colorGenBtn" disabled>生成彩色 Shares</button>
+      <button id="colorPrintAllBtn" disabled>导出 2 张打印 PNG（300 DPI 透明）</button>
+      <button class="ghost" id="colorDemoBtn">用示例图（RGB 字）</button>
+    </div>
+
+    <div style="background: #2a1a10; border: 1px solid #ff7a45; border-left: 4px solid #ff7a45; border-radius: 6px; padding: 12px 16px; margin: 12px 0 16px; font-size: 13px; color: #e8e8ec;">
+      ⚠️ <b>数字叠加要用 Multiply 混合模式</b>：CMYK share 是减色油墨模型——物理叠加时油墨吸光，相当于 RGB 通道取 MIN。但 Photoshop / Figma 默认是 Normal 混合（上层覆盖下层），叠加效果会错。把上层 share 的混合模式改成 <b>Multiply (正片叠底)</b>，结果才对。打印到透明胶片物理叠加就没这个问题（油墨真的会减色）。
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>原图</h3>
+        <div class="desc">CMYK 四通道分别加密（4 套 2-out-of-2）</div>
+        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorOrig"></canvas><div class="empty" id="colorOrigEmpty">先上传彩色图</div></div>
+      </div>
+      <div class="card">
+        <h3>叠加结果 S1 + S2</h3>
+        <div class="desc">用 RGB MIN 模拟油墨叠加（减色）→ 还原彩色原图</div>
+        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorOverlay"></canvas><div class="empty" id="colorOverlayEmpty">生成后显示</div></div>
+      </div>
+      <div class="card">
+        <h3>Share 1</h3>
+        <div class="desc">彩色噪声 — CMYK 4 通道随机油墨拼成的"印刷网点"</div>
+        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorS1"></canvas><div class="empty" id="colorS1Empty">—</div></div>
+        <div class="actions"><button class="ghost" data-color-download="s1">下载透明 PNG</button></div>
+      </div>
+      <div class="card">
+        <h3>Share 2</h3>
+        <div class="desc">彩色噪声 — 单看也无信息</div>
+        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorS2"></canvas><div class="empty" id="colorS2Empty">—</div></div>
+        <div class="actions"><button class="ghost" data-color-download="s2">下载透明 PNG</button></div>
+      </div>
+    </div>
+
+    <div class="info">
+      <b>彩色 CMYK 视觉密码原理：</b>把 RGB 转为 CMYK（Cyan/Magenta/Yellow/blacK 四种油墨）。每个通道独立做 Bayer 抖动 → 二值化的"网点"图（深浅由黑点密度体现）。<br>
+      对 4 个通道<b>分别</b>跑标准 2-out-of-2 视觉密码，得到 4 对二值 share。把每张 share 的 4 通道按"油墨在 → 该色光被吸收"渲染回 RGB：<br>
+      <code>R = 255·(1−C)·(1−K)</code>, <code>G = 255·(1−M)·(1−K)</code>, <code>B = 255·(1−Y)·(1−K)</code>。<br>
+      所以 share 的每个子像素只能是 8 种基色之一：白、青、品红、黄、红、绿、蓝、黑（油墨组合的物理结果）。<br>
+      <br>
+      <b>叠加用 RGB 通道取 MIN</b>（每个通道取小的那个）—— 等价于"两张透明片重叠后该色光的透过率取小"。这就是真实印刷油墨叠加的物理模型。<br>
+      原图饱和颜色还原度高，原图白色区域因为 50% 油墨覆盖会看起来偏灰/带轻微色偏，这是 OR 叠加的固有特性。
+    </div>
+  </div>
+
+  <!-- ============== TAB 3: 3-SHARE / 3-SECRET (HALFTONE, PRINT-READY) ============== -->
+  <div class="panel-content" id="panel-halftone">
+    <div class="controls">
+      <label>子像素边长 N：<input type="range" id="htSide" min="3" max="8" value="4"> <span class="value" id="htSideVal">4</span></label>
+      <label>SEP 强度 K：<input type="range" id="htK" min="1" max="10" value="2"> <span class="value" id="htKVal">2</span> 对/pair</label>
+      <label>秘密分辨率：<input type="range" id="htRes" min="40" max="240" value="120" step="10"> <span class="value" id="htResVal">120</span> px</label>
+      <label>打印尺寸：<input type="range" id="htPrintMm" min="80" max="200" value="140" step="20"> <span class="value" id="htPrintMmVal">140</span> mm</label>
+      <label><input type="checkbox" id="htRegMark"> 加四角对位标记 +</label>
+      <button id="htGenBtn" disabled>已上传 0/3 — 再上传 3 张</button>
+      <button id="htPrintAllBtn" disabled>导出 3 张打印 PNG（300 DPI 透明）</button>
+      <button class="ghost" id="htDemoBtn">用示例图（★ ♥ ☀）</button>
+      <span id="htParamInfo" style="color: var(--muted); font-size: 12px;"></span>
+    </div>
+
+    <h3 style="margin: 0 0 10px; font-size: 14px; color: var(--muted);">① 上传三张秘密图（每张对应一对 share 叠加时显形）</h3>
+    <div class="grid-3">
+      <div class="card">
+        <h3><span class="pair-label">S1+S2</span> 秘密 #1</h3>
+        <div class="desc">叠加 Share 1 + Share 2 时显形</div>
+        <div class="upload-row"><input type="file" data-ht="s12" accept="image/*"></div>
+        <div class="canvas-wrap"><canvas id="htS12"></canvas><div class="empty" id="htS12Empty">上传图片</div></div>
+      </div>
+      <div class="card">
+        <h3><span class="pair-label">S1+S3</span> 秘密 #2</h3>
+        <div class="desc">叠加 Share 1 + Share 3 时显形</div>
+        <div class="upload-row"><input type="file" data-ht="s13" accept="image/*"></div>
+        <div class="canvas-wrap"><canvas id="htS13"></canvas><div class="empty" id="htS13Empty">上传图片</div></div>
+      </div>
+      <div class="card">
+        <h3><span class="pair-label">S2+S3</span> 秘密 #3</h3>
+        <div class="desc">叠加 Share 2 + Share 3 时显形</div>
+        <div class="upload-row"><input type="file" data-ht="s23" accept="image/*"></div>
+        <div class="canvas-wrap"><canvas id="htS23"></canvas><div class="empty" id="htS23Empty">上传图片</div></div>
+      </div>
+    </div>
+
+    <h3 style="margin: 24px 0 10px; font-size: 14px; color: var(--muted);">② 三张 Share（每张就是均匀网点噪声，单看完全无信息）</h3>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Share 1 <span class="pair-label">打印</span></h3>
+        <div class="desc">参与解密：秘密 #1、#2</div>
+        <div class="canvas-wrap"><canvas id="htShare1"></canvas><div class="empty" id="htShare1Empty">三张秘密都上传后<br>自动生成</div></div>
+        <div class="actions">
+          <button class="ghost" data-ht-download="s1">预览 PNG</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Share 2 <span class="pair-label">打印</span></h3>
+        <div class="desc">参与解密：秘密 #1、#3</div>
+        <div class="canvas-wrap"><canvas id="htShare2"></canvas><div class="empty" id="htShare2Empty">三张秘密都上传后<br>自动生成</div></div>
+        <div class="actions">
+          <button class="ghost" data-ht-download="s2">预览 PNG</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Share 3 <span class="pair-label">打印</span></h3>
+        <div class="desc">参与解密：秘密 #2、#3</div>
+        <div class="canvas-wrap"><canvas id="htShare3"></canvas><div class="empty" id="htShare3Empty">三张秘密都上传后<br>自动生成</div></div>
+        <div class="actions">
+          <button class="ghost" data-ht-download="s3">预览 PNG</button>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin: 20px 0 10px; font-size: 14px; color: var(--muted);">③ 三对 Share 的物理叠加预览（OR 模拟）</h3>
+    <div class="grid-3">
+      <div class="card">
+        <h3><span class="pair-label">S1+S2</span> → 应显出 秘密 #1</h3>
+        <div class="canvas-wrap"><canvas id="htOv12"></canvas><div class="empty" id="htOv12Empty">三张秘密都上传后<br>显示叠加</div></div>
+      </div>
+      <div class="card">
+        <h3><span class="pair-label">S1+S3</span> → 应显出 秘密 #2</h3>
+        <div class="canvas-wrap"><canvas id="htOv13"></canvas><div class="empty" id="htOv13Empty">三张秘密都上传后<br>显示叠加</div></div>
+      </div>
+      <div class="card">
+        <h3><span class="pair-label">S2+S3</span> → 应显出 秘密 #3</h3>
+        <div class="canvas-wrap"><canvas id="htOv23"></canvas><div class="empty" id="htOv23Empty">三张秘密都上传后<br>显示叠加</div></div>
+      </div>
+    </div>
+
+    <div class="info">
+      <b>3-share / 3-secret 半色调 VC（无 cover）原理：</b><br>
+      每张 share 默认填入<b>独立的随机 50% 黑白噪声</b>（视觉上像均匀的 TV static / 半色调网点）。<br>
+      对每个秘密像素 → <code>N×N</code> 子像素块，块内随机抽 <code>6K</code> 个位置分给 3 个 pair：<br>
+      <ul style="margin: 6px 0 0 18px; padding: 0;">
+        <li><b>Z₁₂</b> (2K 子像素)：编码秘密 #1。Share 1、2 在这里用 2-of-2 VC pattern；Share 3 保留原随机噪声。</li>
+        <li><b>Z₁₃</b> (2K 子像素)：编码秘密 #2。Share 1、3 走 VC；Share 2 保留噪声。</li>
+        <li><b>Z₂₃</b> (2K 子像素)：编码秘密 #3。Share 2、3 走 VC；Share 1 保留噪声。</li>
+        <li><b>Z_rest</b> (N²−6K)：三张 share 全保留随机噪声。</li>
+      </ul>
+      约束：<code>6K ≤ N²</code>。<br>
+      <br>
+      <b>为什么单 share 完全均匀（彻底无泄漏）：</b>无论 SEP pattern 还是随机噪声，每个子像素都是 50% 黑 50% 白。所以三张 share 的密度处处恒等于 50%（均匀 TV static），<b>不携带任何秘密相关结构</b>——与 tab 2 那种"share 上能看到 ~15% 密度偏差勾勒出秘密轮廓"的情况彻底不同。<br>
+      <br>
+      <b>叠加为什么显形秘密：</b><br>
+      • Z_ij 区域：SEP 起作用——秘密=白时 K 个子像素黑（50% 灰），秘密=黑时 2K 个全黑（100%）<br>
+      • 其它区域：两张独立 50% 随机噪声 OR = 75% 灰（背景）<br>
+      所以叠加图：均匀 75% 灰背景里，秘密的白区呈 50% 灰（亮斑），黑区呈 100% 纯黑（深斑），双向对比都可见。<br>
+      <br>
+      <b>调参：</b>K 越大单 pair 信号越强（<code>K/N²</code> 对比）；N 越大单像素的网点更细腻。<b>N=6, K=3</b>（默认）= 8% 对比；<b>N=4, K=2</b> = 12.5% 对比（更明显但子像素粗）。<br>
+      <br>
+      <b>秘密图选图建议：</b>简单高对比的形状最佳（图标、文字、剪影）；不要用照片当秘密——细节会被半色调网点淹没。<br>
+      <br>
+      <b>打印：</b>点 "导出 3 张打印 PNG" 一次性按 mm 尺寸以 300 DPI 透明 PNG 下载 3 张 share。<b>必须一次性导出</b>因为算法依赖共享的随机种子——如果分次导出会得到 3 张互不相干的 share，叠加根本无法解密！<br>
+      预览 PNG 也是透明底，从当前画布抓取，三张预览只要在同一次生成之后下载也是一致的。<br>
+      <br>
+      物理打印：胶片 + 激光打印机 → 实际尺寸 100% 打印（不要"自适应页面"）→ 角标对齐叠加即可。
+    </div>
+  </div>
+</div>
+
+<script>
+// =================== Tab switching ===================
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// =================== Utilities ===================
+function hideEmpty(id) { const e = document.getElementById(id); if (e) e.style.display = 'none'; }
+function shuffleArr(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function makeBlankWhite(w, h) {
+  const img = new ImageData(w, h);
+  for (let i = 0; i < img.data.length; i += 4) {
+    img.data[i] = img.data[i+1] = img.data[i+2] = 255;
+    img.data[i+3] = 255;
+  }
+  return img;
+}
+// 取黑覆盖白
+function orOverlay(...imgs) {
+  const w = imgs[0].width, h = imgs[0].height;
+  const out = new ImageData(w, h);
+  for (let i = 0; i < out.data.length; i += 4) {
+    let isBlack = false;
+    for (const img of imgs) { if (img.data[i] === 0) { isBlack = true; break; } }
+    const v = isBlack ? 0 : 255;
+    out.data[i] = out.data[i+1] = out.data[i+2] = v;
+    out.data[i+3] = 255;
+  }
+  return out;
+}
+// 从 Image 元素得到二值数组（0=白，1=黑），同时输出预览
+function toBinary(image, threshold, targetW, targetH) {
+  const c = document.createElement('canvas');
+  c.width = targetW; c.height = targetH;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, targetW, targetH);
+  // contain inside
+  const ar = image.width / image.height;
+  let dw = targetW, dh = targetH;
+  if (ar > targetW / targetH) { dh = Math.round(targetW / ar); } else { dw = Math.round(targetH * ar); }
+  ctx.drawImage(image, (targetW - dw) / 2, (targetH - dh) / 2, dw, dh);
+  const data = ctx.getImageData(0, 0, targetW, targetH).data;
+  const bin = new Uint8Array(targetW * targetH);
+  const preview = new ImageData(targetW, targetH);
+  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+    const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+    const a = data[i+3] / 255;
+    const eff = lum * a + 255 * (1 - a);
+    const isBlack = eff < threshold ? 1 : 0;
+    bin[j] = isBlack;
+    const v = isBlack ? 0 : 255;
+    preview.data[i] = preview.data[i+1] = preview.data[i+2] = v;
+    preview.data[i+3] = 255;
+  }
+  return { bin, preview };
+}
+function setBlack(imgData, idx) {
+  imgData.data[idx] = imgData.data[idx+1] = imgData.data[idx+2] = 0;
+}
+
+// =================== BASIC 2-out-of-2 ===================
+const BASIC_PATTERNS = [
+  [[1,1],[0,0]], [[0,0],[1,1]], [[1,0],[1,0]], [[0,1],[0,1]], [[1,0],[0,1]], [[0,1],[1,0]],
+];
+function complementPattern(p) { return p.map(row => row.map(v => 1 - v)); }
+function generateBasicShares(bin, w, h, scale) {
+  const W = w * 2 * scale, H = h * 2 * scale;
+  const s1 = makeBlankWhite(W, H), s2 = makeBlankWhite(W, H);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const isBlack = bin[y * w + x] === 1;
+      const pat = BASIC_PATTERNS[Math.floor(Math.random() * 6)];
+      const patA = pat, patB = isBlack ? complementPattern(pat) : pat;
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+        const va = patA[dy][dx], vb = patB[dy][dx];
+        for (let sy = 0; sy < scale; sy++) for (let sx = 0; sx < scale; sx++) {
+          const px = (x * 2 + dx) * scale + sx, py = (y * 2 + dy) * scale + sy;
+          const idx = (py * W + px) * 4;
+          if (va) setBlack(s1, idx);
+          if (vb) setBlack(s2, idx);
+        }
+      }
+    }
+  }
+  return { s1, s2, W, H };
+}
+
+let basicImage = null;
+const basicFile = document.getElementById('basicFile');
+const basicGenBtn = document.getElementById('basicGenBtn');
+const basicDemoBtn = document.getElementById('basicDemoBtn');
+const basicThreshold = document.getElementById('basicThreshold');
+const basicScale = document.getElementById('basicScale');
+const basicRes = document.getElementById('basicRes');
+const basicThresholdVal = document.getElementById('basicThresholdVal');
+const basicScaleVal = document.getElementById('basicScaleVal');
+const basicResVal = document.getElementById('basicResVal');
+const basicOrig = document.getElementById('basicOrig');
+const basicS1 = document.getElementById('basicS1');
+const basicS2 = document.getElementById('basicS2');
+const basicOverlay = document.getElementById('basicOverlay');
+
+basicFile.addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => { basicImage = img; basicGenBtn.disabled = false; renderBasic(); };
+  img.src = URL.createObjectURL(f);
+});
+function loadBasicDemo(makeDataUrl) {
+  const img = new Image();
+  img.onload = () => { basicImage = img; basicGenBtn.disabled = false; renderBasic(); };
+  img.src = makeDataUrl();
+}
+basicDemoBtn.addEventListener('click', () => {
+  loadBasicDemo(() => {
+    const c = document.createElement('canvas');
+    c.width = 200; c.height = 80;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#000'; ctx.font = 'bold 56px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('密 SECRET', c.width / 2, c.height / 2);
+    return c.toDataURL();
+  });
+});
+document.getElementById('basicDemoBtn2').addEventListener('click', () => {
+  loadBasicDemo(() => {
+    const c = document.createElement('canvas');
+    c.width = 120; c.height = 120;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#000'; ctx.font = 'bold 110px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('♥', 60, 65);
+    return c.toDataURL();
+  });
+});
+document.getElementById('basicDemoBtn3').addEventListener('click', () => {
+  loadBasicDemo(() => {
+    // 类似 QR 码风格的图标 - 三个定位角 + 中间符号
+    const c = document.createElement('canvas');
+    c.width = 140; c.height = 140;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#000';
+    // 三个定位角（QR 风格）
+    const corner = (cx, cy) => {
+      ctx.fillRect(cx, cy, 30, 30);
+      ctx.fillStyle = '#fff'; ctx.fillRect(cx + 5, cy + 5, 20, 20);
+      ctx.fillStyle = '#000'; ctx.fillRect(cx + 10, cy + 10, 10, 10);
+    };
+    corner(10, 10); corner(100, 10); corner(10, 100);
+    // 中间随机黑块（模拟 QR 数据）
+    for (let i = 0; i < 60; i++) {
+      const x = 45 + Math.floor(Math.random() * 60);
+      const y = 45 + Math.floor(Math.random() * 60);
+      ctx.fillRect(x, y, 6, 6);
+    }
+    return c.toDataURL();
+  });
+});
+[basicThreshold, basicScale, basicRes].forEach(el => el.addEventListener('input', () => {
+  basicThresholdVal.textContent = basicThreshold.value;
+  basicScaleVal.textContent = basicScale.value;
+  basicResVal.textContent = basicRes.value;
+}));
+basicThreshold.addEventListener('change', () => basicImage && renderBasic());
+basicScale.addEventListener('change', () => basicImage && renderBasic());
+basicRes.addEventListener('change', () => basicImage && renderBasic());
+basicGenBtn.addEventListener('click', () => basicImage && renderBasic());
+
+function renderBasic() {
+  if (!basicImage) return;
+  const thr = parseInt(basicThreshold.value, 10);
+  const scale = parseInt(basicScale.value, 10);
+  const maxSize = parseInt(basicRes.value, 10);
+  const ratio = Math.min(1, maxSize / Math.max(basicImage.width, basicImage.height));
+  const w = Math.max(1, Math.round(basicImage.width * ratio));
+  const h = Math.max(1, Math.round(basicImage.height * ratio));
+  const { bin, preview } = toBinary(basicImage, thr, w, h);
+  basicOrig.width = w; basicOrig.height = h;
+  basicOrig.getContext('2d').putImageData(preview, 0, 0);
+  hideEmpty('basicOrigEmpty');
+  const { s1, s2, W, H } = generateBasicShares(bin, w, h, scale);
+  basicS1.width = W; basicS1.height = H;
+  basicS2.width = W; basicS2.height = H;
+  basicOverlay.width = W; basicOverlay.height = H;
+  basicS1.getContext('2d').putImageData(s1, 0, 0);
+  basicS2.getContext('2d').putImageData(s2, 0, 0);
+  basicOverlay.getContext('2d').putImageData(orOverlay(s1, s2), 0, 0);
+  ['basicS1Empty','basicS2Empty','basicOverlayEmpty'].forEach(hideEmpty);
+}
+
+document.querySelectorAll('button[data-basic-download]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const which = btn.getAttribute('data-basic-download');
+    const c = which === 's1' ? basicS1 : basicS2;
+    downloadCanvasAsTransparentPng(c, 'basic_' + which + '_transparent.png');
+  });
+});
+
+// (multi-secret 3-shares OR-based tab was removed; logic replaced by halftone tab)
+
+// =================== COLOR CMYK ===================
+// RGB(0..255) → CMYK(0..1)
+function rgbToCmyk(r, g, b) {
+  const k = 1 - Math.max(r, g, b) / 255;
+  if (k >= 0.9999) return [0, 0, 0, 1];
+  const c = (1 - r/255 - k) / (1 - k);
+  const m = (1 - g/255 - k) / (1 - k);
+  const y = (1 - b/255 - k) / (1 - k);
+  return [c, m, y, k];
+}
+
+// Bayer 4x4 ordered dither matrix (values 0..15)
+const BAYER4 = [
+  [ 0,  8,  2, 10],
+  [12,  4, 14,  6],
+  [ 3, 11,  1,  9],
+  [15,  7, 13,  5],
+];
+// 给每个通道一个不同的偏移，避免 4 通道点重合（视觉更好）
+const BAYER_OFFSETS = [
+  [0, 0],
+  [2, 0],
+  [0, 2],
+  [2, 2],
+];
+function bayerThreshold(v, x, y, channelIdx) {
+  const [ox, oy] = BAYER_OFFSETS[channelIdx];
+  const t = (BAYER4[(y + oy) % 4][(x + ox) % 4] + 0.5) / 16;
+  return v > t ? 1 : 0;
+}
+
+// 把图缩放/居中到 (w, h) 的 canvas，返回像素数据
+function rasterizeImage(image, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
+  const ar = image.width / image.height;
+  let dw = w, dh = h;
+  if (ar > w / h) { dh = Math.round(w / ar); } else { dw = Math.round(h * ar); }
+  ctx.drawImage(image, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  return { ctx, imageData: ctx.getImageData(0, 0, w, h) };
+}
+
+// 计算 CMYK 四通道二值半色调位图
+function cmykHalftone(image, threshold, w, h, useDither) {
+  const { imageData } = rasterizeImage(image, w, h);
+  const data = imageData.data;
+  // 4 个 Uint8Array, 对应 C, M, Y, K
+  const channels = [new Uint8Array(w * h), new Uint8Array(w * h), new Uint8Array(w * h), new Uint8Array(w * h)];
+  const previewData = new Uint8ClampedArray(w * h * 4);
+  const t = threshold / 255;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const [c_, m_, y_, k_] = rgbToCmyk(data[i], data[i+1], data[i+2]);
+      const cmykArr = [c_, m_, y_, k_];
+      for (let ci = 0; ci < 4; ci++) {
+        const v = cmykArr[ci];
+        channels[ci][y * w + x] = useDither ? bayerThreshold(v, x, y, ci) : (v > t ? 1 : 0);
+      }
+      // 预览：把二值化后的 CMYK 还原成 RGB 供显示
+      const c1 = channels[0][y * w + x];
+      const m1 = channels[1][y * w + x];
+      const y1 = channels[2][y * w + x];
+      const k1 = channels[3][y * w + x];
+      let pr, pg, pb;
+      if (k1) { pr = pg = pb = 0; }
+      else { pr = 255 * (1 - c1); pg = 255 * (1 - m1); pb = 255 * (1 - y1); }
+      previewData[i] = pr; previewData[i+1] = pg; previewData[i+2] = pb; previewData[i+3] = 255;
+    }
+  }
+  return { channels, preview: new ImageData(previewData, w, h) };
+}
+
+// 生成彩色 CMYK shares
+// 思路：对每个通道独立跑 2-out-of-2 视觉密码（与 BASIC tab 同模式），
+//   - 通道值=1（有 ink）：S1、S2 互补模式
+//   - 通道值=0（无 ink）：S1、S2 相同模式
+// 然后把 4 个通道的二值位图当成 4 种油墨，按 CMYK→RGB 渲染到彩色 share。
+function generateColorShares(image, w, h, scale, useDither, threshold) {
+  const W = w * 2 * scale, H = h * 2 * scale;
+  const s1 = new ImageData(W, H), s2 = new ImageData(W, H);
+  for (let i = 0; i < s1.data.length; i += 4) {
+    s1.data[i] = s1.data[i+1] = s1.data[i+2] = 255; s1.data[i+3] = 255;
+    s2.data[i] = s2.data[i+1] = s2.data[i+2] = 255; s2.data[i+3] = 255;
+  }
+  const { channels, preview } = cmykHalftone(image, threshold, w, h, useDither);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // 对每个通道分别选 pattern
+      const channelPats = [0, 1, 2, 3].map(ci => {
+        const bit = channels[ci][y * w + x];
+        const p = BASIC_PATTERNS[Math.floor(Math.random() * 6)];
+        return { a: p, b: bit ? complementPattern(p) : p };
+      });
+      for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+        // 取 4 个通道在该子像素位置的 ink 值
+        const cA = channelPats[0].a[dy][dx], mA = channelPats[1].a[dy][dx], yA = channelPats[2].a[dy][dx], kA = channelPats[3].a[dy][dx];
+        const cB = channelPats[0].b[dy][dx], mB = channelPats[1].b[dy][dx], yB = channelPats[2].b[dy][dx], kB = channelPats[3].b[dy][dx];
+        // CMYK ink → RGB
+        let rA, gA, bA, rB, gB, bB;
+        if (kA) { rA = gA = bA = 0; } else { rA = 255 * (1 - cA); gA = 255 * (1 - mA); bA = 255 * (1 - yA); }
+        if (kB) { rB = gB = bB = 0; } else { rB = 255 * (1 - cB); gB = 255 * (1 - mB); bB = 255 * (1 - yB); }
+        // 写入 scale × scale block
+        for (let sy = 0; sy < scale; sy++) for (let sx = 0; sx < scale; sx++) {
+          const px = (x * 2 + dx) * scale + sx, py = (y * 2 + dy) * scale + sy;
+          const p4 = (py * W + px) * 4;
+          s1.data[p4] = rA; s1.data[p4+1] = gA; s1.data[p4+2] = bA;
+          s2.data[p4] = rB; s2.data[p4+1] = gB; s2.data[p4+2] = bB;
+        }
+      }
+    }
+  }
+  return { s1, s2, W, H, preview };
+}
+
+// 减色叠加：RGB 各通道取 MIN（模拟油墨叠加吸光）
+function minOverlay(s1, s2) {
+  const out = new ImageData(s1.width, s1.height);
+  for (let i = 0; i < out.data.length; i += 4) {
+    out.data[i]   = Math.min(s1.data[i],   s2.data[i]);
+    out.data[i+1] = Math.min(s1.data[i+1], s2.data[i+1]);
+    out.data[i+2] = Math.min(s1.data[i+2], s2.data[i+2]);
+    out.data[i+3] = 255;
+  }
+  return out;
+}
+
+// ----- color UI -----
+let colorImage = null;
+const colorFile = document.getElementById('colorFile');
+const colorGenBtn = document.getElementById('colorGenBtn');
+const colorPrintAllBtn = document.getElementById('colorPrintAllBtn');
+const colorDemoBtn = document.getElementById('colorDemoBtn');
+const colorDither = document.getElementById('colorDither');
+const colorThreshold = document.getElementById('colorThreshold');
+const colorScale = document.getElementById('colorScale');
+const colorPrintMm = document.getElementById('colorPrintMm');
+const colorThresholdVal = document.getElementById('colorThresholdVal');
+const colorScaleVal = document.getElementById('colorScaleVal');
+const colorPrintMmVal = document.getElementById('colorPrintMmVal');
+
+const colorOrig = document.getElementById('colorOrig');
+const colorS1 = document.getElementById('colorS1');
+const colorS2 = document.getElementById('colorS2');
+const colorOverlay = document.getElementById('colorOverlay');
+
+colorFile.addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => { colorImage = img; colorGenBtn.disabled = false; colorPrintAllBtn.disabled = false; renderColor(); };
+  img.src = URL.createObjectURL(f);
+});
+
+colorDemoBtn.addEventListener('click', () => {
+  const c = document.createElement('canvas');
+  c.width = 220; c.height = 100;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.font = 'bold 64px sans-serif';
+  ctx.textBaseline = 'middle';
+  const yMid = c.height / 2 + 4;
+  ctx.fillStyle = '#dc2626'; ctx.fillText('R', 30, yMid);
+  ctx.fillStyle = '#16a34a'; ctx.fillText('G', 90, yMid);
+  ctx.fillStyle = '#2563eb'; ctx.fillText('B', 150, yMid);
+  // 加一个色块
+  ctx.fillStyle = '#f59e0b'; ctx.fillRect(c.width - 30, 10, 20, 80);
+  const img = new Image();
+  img.onload = () => { colorImage = img; colorGenBtn.disabled = false; colorPrintAllBtn.disabled = false; renderColor(); };
+  img.src = c.toDataURL();
+});
+
+[colorThreshold, colorScale, colorPrintMm].forEach(el => el.addEventListener('input', () => {
+  colorThresholdVal.textContent = colorThreshold.value;
+  colorScaleVal.textContent = colorScale.value;
+  colorPrintMmVal.textContent = colorPrintMm.value;
+}));
+colorThreshold.addEventListener('change', () => colorImage && renderColor());
+colorScale.addEventListener('change', () => colorImage && renderColor());
+colorDither.addEventListener('change', () => colorImage && renderColor());
+colorGenBtn.addEventListener('click', () => colorImage && renderColor());
+
+function renderColor() {
+  if (!colorImage) return;
+  const useDither = colorDither.checked;
+  const thr = parseInt(colorThreshold.value, 10);
+  const scale = parseInt(colorScale.value, 10);
+  const maxSize = 80;
+  const ratio = Math.min(1, maxSize / Math.max(colorImage.width, colorImage.height));
+  const w = Math.max(1, Math.round(colorImage.width * ratio));
+  const h = Math.max(1, Math.round(colorImage.height * ratio));
+
+  const { s1, s2, W, H, preview } = generateColorShares(colorImage, w, h, scale, useDither, thr);
+
+  colorOrig.width = w; colorOrig.height = h;
+  colorOrig.getContext('2d').putImageData(preview, 0, 0);
+  hideEmpty('colorOrigEmpty');
+
+  colorS1.width = W; colorS1.height = H;
+  colorS2.width = W; colorS2.height = H;
+  colorOverlay.width = W; colorOverlay.height = H;
+  colorS1.getContext('2d').putImageData(s1, 0, 0);
+  colorS2.getContext('2d').putImageData(s2, 0, 0);
+  colorOverlay.getContext('2d').putImageData(minOverlay(s1, s2), 0, 0);
+  ['colorS1Empty', 'colorS2Empty', 'colorOverlayEmpty'].forEach(hideEmpty);
+}
+
+document.querySelectorAll('button[data-color-download]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const which = btn.getAttribute('data-color-download');
+    const map = { s1: 'colorS1', s2: 'colorS2' };
+    const c = document.getElementById(map[which]);
+    downloadCanvasAsTransparentPng(c, 'color_' + which + '_transparent.png');
+  });
+});
+
+// CMYK 一次性导出 2 张 (300 DPI 透明，可选 + 对位标记)
+// 必须一次性导出：每张 share 的随机 SEP pattern 必须来自同一次 generateColorShares 调用
+document.getElementById('colorPrintAllBtn').addEventListener('click', () => {
+  if (!colorImage) return;
+  const useDither = colorDither.checked;
+  const thr = parseInt(colorThreshold.value, 10);
+  const scale = parseInt(colorScale.value, 10);
+  const printMm = parseInt(colorPrintMm.value, 10);
+  const includeRegMarks = document.getElementById('colorRegMark').checked;
+  const targetPx = Math.round(printMm * 300 / 25.4);
+  // generateColorShares: W = w * 2 * scale，所以 w = targetPx / (2*scale)
+  const w = Math.max(20, Math.round(targetPx / (2 * scale)));
+  const h = w;
+  const btn = document.getElementById('colorPrintAllBtn');
+  btn.disabled = true; const origText = btn.textContent;
+  btn.textContent = '渲染中…';
+  setTimeout(() => {
+    try {
+      // 只跑一次算法 → 2 张 share 共享同一组 SEP pattern + 噪声
+      const { s1, s2, W, H } = generateColorShares(colorImage, w, h, scale, useDither, thr);
+      const tag = includeRegMarks ? '_withmarks' : '';
+      [['s1', s1], ['s2', s2]].forEach(([which, imgData], i) => {
+        setTimeout(() => {
+          // 把 ImageData 转成透明 PNG（白色 → alpha 0）
+          const out = new ImageData(W, H);
+          for (let j = 0; j < imgData.data.length; j += 4) {
+            const r = imgData.data[j], g = imgData.data[j+1], b = imgData.data[j+2];
+            out.data[j] = r; out.data[j+1] = g; out.data[j+2] = b;
+            out.data[j+3] = (r === 255 && g === 255 && b === 255) ? 0 : 255;
+          }
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = W; tempCanvas.height = H;
+          const tCtx = tempCanvas.getContext('2d');
+          tCtx.putImageData(out, 0, 0);
+          if (includeRegMarks) addRegistrationMarks(tCtx, W, H);
+          const a = document.createElement('a');
+          a.href = tempCanvas.toDataURL('image/png');
+          a.download = `color_${which}_${printMm}mm_300dpi${tag}.png`;
+          a.click();
+        }, i * 400);
+      });
+    } finally {
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }, 1200);
+    }
+  }, 50);
+});
+
+// =================== HALFTONE STEGANOGRAPHIC VC (3-SHARE / 3-SECRET) ===================
+// 将 Image 绘到 w×h 灰度 Float32Array
+function imageToGray(image, w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+  const ar = image.width / image.height;
+  let dw = w, dh = h;
+  if (ar > w / h) { dh = Math.round(w / ar); } else { dw = Math.round(h * ar); }
+  ctx.drawImage(image, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  const data = ctx.getImageData(0, 0, w, h).data;
+  const gray = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+    const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+    const a = data[i+3] / 255;
+    gray[j] = lum * a + 255 * (1 - a);
+  }
+  return gray;
+}
+
+// Floyd-Steinberg 误差扩散，输入灰度 0..255，输出 Uint8Array 1=黑墨/0=白纸
+function fsHalftone(gray, w, h) {
+  const buf = new Float32Array(gray); // 复制以便累加误差
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      const old = buf[idx];
+      const newVal = old < 128 ? 0 : 255;
+      out[idx] = newVal === 0 ? 1 : 0;
+      const err = old - newVal;
+      if (x + 1 < w) buf[idx + 1] += err * 7 / 16;
+      if (y + 1 < h) {
+        if (x > 0)     buf[idx + w - 1] += err * 3 / 16;
+                       buf[idx + w]     += err * 5 / 16;
+        if (x + 1 < w) buf[idx + w + 1] += err * 1 / 16;
+      }
+    }
+  }
+  return out;
+}
+
+// 把二值半色调位图渲染为黑/白 ImageData
+function htBitmapToImageData(bits, W, H) {
+  const out = new ImageData(W, H);
+  for (let i = 0, j = 0; i < out.data.length; i += 4, j++) {
+    const v = bits[j] ? 0 : 255;
+    out.data[i] = out.data[i+1] = out.data[i+2] = v;
+    out.data[i+3] = 255;
+  }
+  return out;
+}
+
+// 主算法：3-share / 3-secret 半色调 VC（无需 cover；用随机 50% 噪声作为隐式 cover）
+// 输入: 3 张 secret Image, w/h(粗分辨率=秘密像素), side, K
+// 输出: 3 张 share 二值位图, 3 对叠加
+function generateHalftone3Shares(s12Img, s13Img, s23Img, w, h, side, K) {
+  const W = w * side, H = h * side;
+  // Secret 在 coarse 分辨率半色调
+  const s12 = fsHalftone(imageToGray(s12Img, w, h), w, h);
+  const s13 = fsHalftone(imageToGray(s13Img, w, h), w, h);
+  const s23 = fsHalftone(imageToGray(s23Img, w, h), w, h);
+
+  const share1 = new Uint8Array(W * H);
+  const share2 = new Uint8Array(W * H);
+  const share3 = new Uint8Array(W * H);
+  // 默认每张 share 填独立的随机 50% 黑白噪声（隐式 cover = 50% 灰）
+  for (let i = 0; i < W * H; i++) {
+    share1[i] = Math.random() < 0.5 ? 1 : 0;
+    share2[i] = Math.random() < 0.5 ? 1 : 0;
+    share3[i] = Math.random() < 0.5 ? 1 : 0;
+  }
+
+  const N2 = side * side;
+  const positions = new Array(N2);
+  for (let i = 0; i < N2; i++) positions[i] = i;
+  // 校验约束：6K ≤ N²；若超出则截断
+  const Kuse = Math.min(K, Math.floor(N2 / 6));
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const shuf = positions.slice();
+      shuffleArr(shuf);
+      // 三个 pair 各占 2K 个连续位置
+      const pairs = [
+        { shareA: share1, shareB: share2, secret: s12[y*w+x], start: 0 },
+        { shareA: share1, shareB: share3, secret: s13[y*w+x], start: 2*Kuse },
+        { shareA: share2, shareB: share3, secret: s23[y*w+x], start: 4*Kuse },
+      ];
+      for (const pair of pairs) {
+        for (let kk = 0; kk < Kuse; kk++) {
+          const pA = shuf[pair.start + 2*kk];
+          const pB = shuf[pair.start + 2*kk + 1];
+          const dyA = Math.floor(pA / side), dxA = pA % side;
+          const dyB = Math.floor(pB / side), dxB = pB % side;
+          const iA = (y * side + dyA) * W + (x * side + dxA);
+          const iB = (y * side + dyB) * W + (x * side + dxB);
+          // 随机选 (a,b) = (1,0) 或 (0,1)，保证 share 局部均匀分布
+          const flip = Math.random() < 0.5;
+          const aVal = flip ? 0 : 1;
+          const bVal = flip ? 1 : 0;
+          pair.shareA[iA] = aVal;
+          pair.shareA[iB] = bVal;
+          if (pair.secret === 0) {
+            pair.shareB[iA] = aVal;
+            pair.shareB[iB] = bVal;
+          } else {
+            pair.shareB[iA] = 1 - aVal;
+            pair.shareB[iB] = 1 - bVal;
+          }
+          // 第三张 share 保持默认 cover 半色调（已经填好，无需改）
+        }
+      }
+    }
+  }
+
+  // 三对 OR 叠加
+  const ov12 = new Uint8Array(W * H);
+  const ov13 = new Uint8Array(W * H);
+  const ov23 = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    ov12[i] = share1[i] | share2[i];
+    ov13[i] = share1[i] | share3[i];
+    ov23[i] = share2[i] | share3[i];
+  }
+
+  return {
+    share1, share2, share3,
+    ov12, ov13, ov23,
+    s12Bits: s12, s13Bits: s13, s23Bits: s23,
+    W, H, Kuse,
+  };
+}
+
+// 把二值 share 渲染到 canvas
+// transparent=true 时：黑像素 alpha=255、白像素 alpha=0（透明底，适合打印透明片）
+function drawBitsToCanvas(canvas, bits, W, H, scale = 1, regMarks = false, transparent = false) {
+  const outW = W * scale, outH = H * scale;
+  canvas.width = outW; canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  if (transparent) ctx.clearRect(0, 0, outW, outH);
+  const img = new ImageData(outW, outH);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const isBlack = bits[y * W + x] === 1;
+      const v = isBlack ? 0 : 255;
+      const a = transparent ? (isBlack ? 255 : 0) : 255;
+      for (let sy = 0; sy < scale; sy++) for (let sx = 0; sx < scale; sx++) {
+        const idx = ((y * scale + sy) * outW + (x * scale + sx)) * 4;
+        img.data[idx] = img.data[idx+1] = img.data[idx+2] = v;
+        img.data[idx+3] = a;
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  if (regMarks) addRegistrationMarks(ctx, outW, outH);
+}
+
+// 把已有 canvas（任意 RGB 内容）转成透明 PNG 下载
+// 白像素 (255,255,255) → alpha 0；其它 → alpha 255
+function downloadCanvasAsTransparentPng(canvas, filename) {
+  if (!canvas.width || !canvas.height) return;
+  const ctx = canvas.getContext('2d');
+  const src = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const out = new ImageData(canvas.width, canvas.height);
+  for (let i = 0; i < src.data.length; i += 4) {
+    const r = src.data[i], g = src.data[i+1], b = src.data[i+2];
+    out.data[i] = r; out.data[i+1] = g; out.data[i+2] = b;
+    out.data[i+3] = (r === 255 && g === 255 && b === 255) ? 0 : 255;
+  }
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width; tmp.height = canvas.height;
+  tmp.getContext('2d').putImageData(out, 0, 0);
+  const a = document.createElement('a');
+  a.href = tmp.toDataURL('image/png');
+  a.download = filename;
+  a.click();
+}
+
+// 四角十字 registration mark
+function addRegistrationMarks(ctx, W, H) {
+  const arm = Math.max(8, Math.round(W * 0.025));   // 十字臂长
+  const thick = Math.max(2, Math.round(arm * 0.18)); // 线粗
+  const margin = Math.max(4, Math.round(arm * 0.5)); // 离边距
+  ctx.fillStyle = '#000';
+  const corners = [
+    [margin + arm, margin + arm],
+    [W - margin - arm, margin + arm],
+    [margin + arm, H - margin - arm],
+    [W - margin - arm, H - margin - arm],
+  ];
+  for (const [cx, cy] of corners) {
+    ctx.fillRect(cx - arm, cy - Math.round(thick / 2), arm * 2, thick);
+    ctx.fillRect(cx - Math.round(thick / 2), cy - arm, thick, arm * 2);
+  }
+}
+
+// ----- UI -----
+const htImages = { s12: null, s13: null, s23: null };
+const htSide = document.getElementById('htSide');
+const htK = document.getElementById('htK');
+const htRes = document.getElementById('htRes');
+const htPrintMm = document.getElementById('htPrintMm');
+const htSideVal = document.getElementById('htSideVal');
+const htKVal = document.getElementById('htKVal');
+const htResVal = document.getElementById('htResVal');
+const htPrintMmVal = document.getElementById('htPrintMmVal');
+const htGenBtn = document.getElementById('htGenBtn');
+const htDemoBtn = document.getElementById('htDemoBtn');
+const htParamInfo = document.getElementById('htParamInfo');
+
+function updateHtParamInfo() {
+  const N = parseInt(htSide.value, 10);
+  const Kmax = Math.floor(N*N / 6);
+  let K = parseInt(htK.value, 10);
+  htK.max = Kmax;
+  if (K > Kmax) { K = Kmax; htK.value = K; htKVal.textContent = K; }
+  const contrastPct = (K / (N*N) * 100).toFixed(1);
+  htParamInfo.textContent = `单 pair 信号对比 ${contrastPct}%（K_max = ${Kmax}）`;
+}
+
+[htSide, htK, htRes, htPrintMm].forEach(el => el.addEventListener('input', () => {
+  htSideVal.textContent = htSide.value;
+  htKVal.textContent = htK.value;
+  htResVal.textContent = htRes.value;
+  htPrintMmVal.textContent = htPrintMm.value;
+  updateHtParamInfo();
+}));
+[htSide, htK, htRes].forEach(el => el.addEventListener('change', () => renderHt()));
+htGenBtn.addEventListener('click', () => renderHt());
+updateHtParamInfo();
+
+document.querySelectorAll('input[data-ht]').forEach(input => {
+  input.addEventListener('change', (e) => {
+    const key = input.dataset.ht;
+    const f = e.target.files[0]; if (!f) return;
+    const img = new Image();
+    img.onload = () => {
+      htImages[key] = img;
+      checkHtReady();
+      renderHt();
+    };
+    img.src = URL.createObjectURL(f);
+  });
+});
+
+function checkHtReady() {
+  const uploaded = ['s12','s13','s23'].filter(k => htImages[k]).length;
+  const allReady = uploaded === 3;
+  if (!allReady) {
+    htGenBtn.disabled = true;
+    htGenBtn.textContent = `已上传 ${uploaded}/3 — 再上传 ${3 - uploaded} 张`;
+  } else {
+    htGenBtn.disabled = false;
+    htGenBtn.textContent = '生成 3 张 Shares';
+  }
+  const printAllBtn = document.getElementById('htPrintAllBtn');
+  if (printAllBtn) printAllBtn.disabled = !allReady;
+}
+
+htDemoBtn.addEventListener('click', () => {
+  const makeSecret = (sym) => {
+    const c = document.createElement('canvas'); c.width = 120; c.height = 120;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 120, 120);
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 100px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(sym, 60, 65);
+    return c.toDataURL();
+  };
+  const load = (key, url) => new Promise(res => {
+    const img = new Image();
+    img.onload = () => { htImages[key] = img; res(); };
+    img.src = url;
+  });
+  Promise.all([
+    load('s12', makeSecret('★')),
+    load('s13', makeSecret('♥')),
+    load('s23', makeSecret('☀')),
+  ]).then(() => { checkHtReady(); renderHt(); });
+});
+
+function renderHt() {
+  const side = parseInt(htSide.value, 10);
+  const w = parseInt(htRes.value, 10);
+  const h = w;
+
+  // 已上传的秘密：独立渲染半色调预览（不等三张都齐）
+  const secretMap = {
+    s12: { canvas: 'htS12', empty: 'htS12Empty' },
+    s13: { canvas: 'htS13', empty: 'htS13Empty' },
+    s23: { canvas: 'htS23', empty: 'htS23Empty' },
+  };
+  for (const key in secretMap) {
+    if (!htImages[key]) continue;
+    const gray = imageToGray(htImages[key], w, h);
+    const bits = fsHalftone(gray, w, h);
+    drawBitsToCanvas(document.getElementById(secretMap[key].canvas), bits, w, h, side, false);
+    hideEmpty(secretMap[key].empty);
+  }
+
+  // 三张都齐了才生成 shares + 叠加
+  if (!(htImages.s12 && htImages.s13 && htImages.s23)) return;
+  const K = parseInt(htK.value, 10);
+  const result = generateHalftone3Shares(
+    htImages.s12, htImages.s13, htImages.s23,
+    w, h, side, K
+  );
+  const W = result.W, H = result.H;
+
+  // Shares
+  drawBitsToCanvas(document.getElementById('htShare1'), result.share1, W, H, 1, false);
+  drawBitsToCanvas(document.getElementById('htShare2'), result.share2, W, H, 1, false);
+  drawBitsToCanvas(document.getElementById('htShare3'), result.share3, W, H, 1, false);
+  // 叠加
+  drawBitsToCanvas(document.getElementById('htOv12'), result.ov12, W, H, 1, false);
+  drawBitsToCanvas(document.getElementById('htOv13'), result.ov13, W, H, 1, false);
+  drawBitsToCanvas(document.getElementById('htOv23'), result.ov23, W, H, 1, false);
+  ['htShare1Empty','htShare2Empty','htShare3Empty','htOv12Empty','htOv13Empty','htOv23Empty'].forEach(hideEmpty);
+
+  window.__htCache = result;
+}
+
+// 预览 PNG 下载
+document.querySelectorAll('button[data-ht-download]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const which = btn.getAttribute('data-ht-download');
+    const map = { s1: 'htShare1', s2: 'htShare2', s3: 'htShare3' };
+    const c = document.getElementById(map[which]);
+    downloadCanvasAsTransparentPng(c, 'halftone_' + which + '_preview_transparent.png');
+  });
+});
+
+// 打印就绪导出（一次性导出 3 张，保证 SEP + 噪声来自同一次算法运行）
+// 关键修复：之前是 3 个按钮各自跑一次算法 → 3 张 share 用不同随机种子 → 叠加不显形
+document.getElementById('htPrintAllBtn').addEventListener('click', () => {
+  if (!(htImages.s12 && htImages.s13 && htImages.s23)) return;
+  const side = parseInt(htSide.value, 10);
+  const K = parseInt(htK.value, 10);
+  const printMm = parseInt(htPrintMm.value, 10);
+  const includeRegMarks = document.getElementById('htRegMark').checked;
+  const targetPx = Math.round(printMm * 300 / 25.4);
+  const w = Math.max(20, Math.round(targetPx / side));
+  const h = w;
+  const btn = document.getElementById('htPrintAllBtn');
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = '渲染中…';
+  setTimeout(() => {
+    try {
+      // 只跑一次算法 → 3 张 share 来自同一组 SEP + 噪声
+      const result = generateHalftone3Shares(
+        htImages.s12, htImages.s13, htImages.s23,
+        w, h, side, K
+      );
+      const tag = includeRegMarks ? '_withmarks' : '';
+      const shares = [
+        ['s1', result.share1],
+        ['s2', result.share2],
+        ['s3', result.share3],
+      ];
+      shares.forEach(([which, bits], i) => {
+        setTimeout(() => {
+          const tempCanvas = document.createElement('canvas');
+          drawBitsToCanvas(tempCanvas, bits, result.W, result.H, 1, includeRegMarks, true);
+          const a = document.createElement('a');
+          a.href = tempCanvas.toDataURL('image/png');
+          a.download = `halftone3_${which}_${printMm}mm_300dpi${tag}.png`;
+          a.click();
+        }, i * 400); // 分批触发下载，避免浏览器拦截
+      });
+    } finally {
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }, 1500);
+    }
+  }, 50);
+});
+</script>
+</body>
+</html>
