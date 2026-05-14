@@ -443,7 +443,7 @@
 
     <div class="size-hint-row" id="htSizeHint">
       <span>📐 预览 share：<b id="htShareSizeText">—</b> ≈ <b id="htPrintSizeText">—</b> @ 300 DPI</span>
-      <span>🖨️ 点"导出打印"会按设定的 <b id="htExportMmText">148mm</b> 长边重新以 300 DPI 渲染（半色调 tab 强制方形）</span>
+      <span>🖨️ 点"导出打印"会按设定的 <b id="htExportMmText">148mm</b> 长边重新以 300 DPI 渲染（用第一张秘密的比例）</span>
       <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
     </div>
 
@@ -1407,13 +1407,26 @@ function updateHtParamInfo() {
   htParamInfo.textContent = `单 pair 信号对比 ${contrastPct}%（K_max = ${Kmax}）`;
 }
 
+// 取第一张已上传秘密的比例，没有就默认方形
+function htAspect() {
+  for (const key of ['s12', 's13', 's23']) {
+    if (htImages[key]) return htImages[key].width / htImages[key].height;
+  }
+  return 1;
+}
+
 function updateHtSizeHint() {
   const res = parseInt(htRes.value, 10);
   const N = parseInt(htSide.value, 10);
-  const share = res * N;
-  document.getElementById('htShareSizeText').textContent = `${share} × ${share} px`;
-  document.getElementById('htPrintSizeText').textContent = `${pxToMm(share)} × ${pxToMm(share)} mm`;
-  document.getElementById('htExportMmText').textContent = `${htPrintMm.value}mm`;
+  const ar = htAspect();
+  // res = 输入长边；短边按比例算
+  let wIn = res, hIn = res;
+  if (ar >= 1) hIn = Math.round(res / ar);
+  else         wIn = Math.round(res * ar);
+  const W = wIn * N, H = hIn * N;
+  document.getElementById('htShareSizeText').textContent = `${W} × ${H} px`;
+  document.getElementById('htPrintSizeText').textContent = `${pxToMm(W)} × ${pxToMm(H)} mm`;
+  document.getElementById('htExportMmText').textContent = `${htPrintMm.value}mm 长边`;
 }
 
 function highlightHtPreset() {
@@ -1455,6 +1468,7 @@ document.querySelectorAll('input[data-ht]').forEach(input => {
     img.onload = () => {
       htImages[key] = img;
       checkHtReady();
+      updateHtSizeHint();
       renderHt();
     };
     img.src = URL.createObjectURL(f);
@@ -1495,13 +1509,17 @@ htDemoBtn.addEventListener('click', () => {
     load('s12', makeSecret('★')),
     load('s13', makeSecret('♥')),
     load('s23', makeSecret('☀')),
-  ]).then(() => { checkHtReady(); renderHt(); });
+  ]).then(() => { checkHtReady(); updateHtSizeHint(); renderHt(); });
 });
 
 function renderHt() {
   const side = parseInt(htSide.value, 10);
-  const w = parseInt(htRes.value, 10);
-  const h = w;
+  const res = parseInt(htRes.value, 10);
+  // 用第一张已上传秘密的比例（mm 长边对应 res，短边按比例缩）
+  const ar = htAspect();
+  let w = res, h = res;
+  if (ar >= 1) h = Math.max(20, Math.round(res / ar));
+  else         w = Math.max(20, Math.round(res * ar));
 
   // 已上传的秘密：独立渲染半色调预览（不等三张都齐）
   const secretMap = {
@@ -1557,9 +1575,13 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
   const K = parseInt(htK.value, 10);
   const printMm = parseInt(htPrintMm.value, 10);
   const includeRegMarks = document.getElementById('htRegMark').checked;
-  const targetPx = Math.round(printMm * 300 / 25.4);
-  const w = Math.max(20, Math.round(targetPx / side));
-  const h = w;
+  const targetLongPx = mmToPx(printMm);
+  // mm = 长边，短边按第一张秘密的比例缩
+  const ar = htAspect();
+  let longInput = Math.max(20, Math.round(targetLongPx / side));
+  let w, h;
+  if (ar >= 1) { w = longInput; h = Math.max(20, Math.round(w / ar)); }
+  else        { h = longInput; w = Math.max(20, Math.round(h * ar)); }
   const btn = document.getElementById('htPrintAllBtn');
   btn.disabled = true;
   const origText = btn.textContent;
