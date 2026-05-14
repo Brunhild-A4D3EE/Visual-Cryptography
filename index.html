@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>视觉密码学演示 Visual Cryptography</title>
+<title>视觉密码学演示 Visual Cryptography · by Suanovil (Sue)</title>
 <style>
   :root {
     --bg: #0f0f12;
@@ -23,7 +23,17 @@
     line-height: 1.5;
   }
   .container { max-width: 1300px; margin: 0 auto; }
-  h1 { margin: 0 0 6px; font-size: 24px; }
+  .header-row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 6px; }
+  h1 { margin: 0; font-size: 24px; }
+  .author-badge {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 3px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(255,122,69,0.15), rgba(255,148,102,0.05));
+  }
+  .author-badge b { color: var(--accent); font-weight: 600; }
   .sub { color: var(--muted); margin-bottom: 18px; font-size: 14px; }
 
   .tabs {
@@ -146,7 +156,10 @@
 </head>
 <body>
 <div class="container">
-  <h1>视觉密码学演示 / Visual Cryptography</h1>
+  <div class="header-row">
+    <h1>视觉密码学演示 / Visual Cryptography</h1>
+    <span class="author-badge">作者：<b>Suanovil (Sue)</b></span>
+  </div>
   <div class="sub">用纯物理叠加（黑覆盖白）就能"解密"图像——无需任何计算。</div>
 
   <div class="tabs">
