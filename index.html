@@ -286,15 +286,25 @@
       <label>分辨率：<input type="range" id="basicRes" min="40" max="2000" value="80" step="20"> <span class="value" id="basicResVal">80</span> px</label>
       <label>二值化阈值：<input type="range" id="basicThreshold" min="0" max="255" value="128"> <span class="value" id="basicThresholdVal">128</span></label>
       <label>放大倍数：<input type="range" id="basicScale" min="1" max="4" value="2"> <span class="value" id="basicScaleVal">2</span></label>
+      <label>打印尺寸（仅导出用）：<input type="range" id="basicPrintMm" min="60" max="320" value="148" step="2"> <span class="value" id="basicPrintMmVal">148</span> mm
+        <span class="preset-chips">
+          <button class="preset-chip" data-basic-preset="90">名片 90</button>
+          <button class="preset-chip" data-basic-preset="148">明信片 148</button>
+          <button class="preset-chip" data-basic-preset="210">色卡 210</button>
+          <button class="preset-chip" data-basic-preset="310">文件夹 310</button>
+        </span>
+      </label>
+      <label><input type="checkbox" id="basicRegMark"> 加四角对位标记 +</label>
       <button id="basicGenBtn" disabled>生成 Shares</button>
+      <button id="basicPrintAllBtn" disabled>导出 2 张打印 PNG（300 DPI 透明）</button>
       <button class="ghost" id="basicDemoBtn">示例：密 SECRET</button>
       <button class="ghost" id="basicDemoBtn2">示例：心形 ♥</button>
       <button class="ghost" id="basicDemoBtn3">示例：QR 风格图标</button>
     </div>
 
     <div class="size-hint-row" id="basicSizeHint">
-      <span>📐 预览 share 实际尺寸：<b id="basicShareSizeText">—</b></span>
-      <span>🖨️ 打印 @ 300 DPI ≈ <b id="basicPrintSizeText">—</b></span>
+      <span>📐 预览 share：<b id="basicShareSizeText">—</b> ≈ <b id="basicPrintSizeText">—</b> @ 300 DPI</span>
+      <span>🖨️ 点"导出打印"会按设定的 <b id="basicExportMmText">148mm</b> 长边重新以 300 DPI 渲染</span>
       <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
     </div>
 
@@ -369,8 +379,8 @@
     </div>
 
     <div class="size-hint-row" id="colorSizeHint">
-      <span>📐 预览 share 实际尺寸：<b id="colorShareSizeText">—</b></span>
-      <span>🖨️ 打印 @ 300 DPI ≈ <b id="colorPrintSizeText">—</b></span>
+      <span>📐 预览 share：<b id="colorShareSizeText">—</b> ≈ <b id="colorPrintSizeText">—</b> @ 300 DPI</span>
+      <span>🖨️ 点"导出打印"会按设定的 <b id="colorExportMmText">148mm</b> 长边重新以 300 DPI 渲染</span>
       <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
     </div>
 
@@ -432,8 +442,8 @@
     </div>
 
     <div class="size-hint-row" id="htSizeHint">
-      <span>📐 预览 share 实际尺寸：<b id="htShareSizeText">—</b></span>
-      <span>🖨️ 打印 @ 300 DPI ≈ <b id="htPrintSizeText">—</b></span>
+      <span>📐 预览 share：<b id="htShareSizeText">—</b> ≈ <b id="htPrintSizeText">—</b> @ 300 DPI</span>
+      <span>🖨️ 点"导出打印"会按设定的 <b id="htExportMmText">148mm</b> 长边重新以 300 DPI 渲染（半色调 tab 强制方形）</span>
       <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
     </div>
 
@@ -637,13 +647,16 @@ function generateBasicShares(bin, w, h, scale) {
 let basicImage = null;
 const basicFile = document.getElementById('basicFile');
 const basicGenBtn = document.getElementById('basicGenBtn');
+const basicPrintAllBtn = document.getElementById('basicPrintAllBtn');
 const basicDemoBtn = document.getElementById('basicDemoBtn');
 const basicThreshold = document.getElementById('basicThreshold');
 const basicScale = document.getElementById('basicScale');
 const basicRes = document.getElementById('basicRes');
+const basicPrintMm = document.getElementById('basicPrintMm');
 const basicThresholdVal = document.getElementById('basicThresholdVal');
 const basicScaleVal = document.getElementById('basicScaleVal');
 const basicResVal = document.getElementById('basicResVal');
+const basicPrintMmVal = document.getElementById('basicPrintMmVal');
 const basicOrig = document.getElementById('basicOrig');
 const basicS1 = document.getElementById('basicS1');
 const basicS2 = document.getElementById('basicS2');
@@ -652,12 +665,12 @@ const basicOverlay = document.getElementById('basicOverlay');
 basicFile.addEventListener('change', (e) => {
   const f = e.target.files[0]; if (!f) return;
   const img = new Image();
-  img.onload = () => { basicImage = img; basicGenBtn.disabled = false; renderBasic(); };
+  img.onload = () => { basicImage = img; basicGenBtn.disabled = false; basicPrintAllBtn.disabled = false; updateBasicSizeHint(); renderBasic(); };
   img.src = URL.createObjectURL(f);
 });
 function loadBasicDemo(makeDataUrl) {
   const img = new Image();
-  img.onload = () => { basicImage = img; basicGenBtn.disabled = false; renderBasic(); };
+  img.onload = () => { basicImage = img; basicGenBtn.disabled = false; basicPrintAllBtn.disabled = false; updateBasicSizeHint(); renderBasic(); };
   img.src = makeDataUrl();
 }
 basicDemoBtn.addEventListener('click', () => {
@@ -710,26 +723,104 @@ document.getElementById('basicDemoBtn3').addEventListener('click', () => {
 });
 // px @ 300 DPI → mm
 function pxToMm(px) { return (px * 25.4 / 300).toFixed(1); }
+// mm → px @ 300 DPI
+function mmToPx(mm) { return Math.round(mm * 300 / 25.4); }
 
 function updateBasicSizeHint() {
   const res = parseInt(basicRes.value, 10);
   const scale = parseInt(basicScale.value, 10);
   const share = res * 2 * scale;
-  document.getElementById('basicShareSizeText').textContent = `${share} × ${share} px`;
-  document.getElementById('basicPrintSizeText').textContent = `${pxToMm(share)} × ${pxToMm(share)} mm`;
+  // 预览尺寸基于输入图比例（如果有），否则方形
+  let pw = share, ph = share;
+  if (basicImage) {
+    const ar = basicImage.width / basicImage.height;
+    if (ar >= 1) ph = Math.round(share / ar);
+    else pw = Math.round(share * ar);
+  }
+  document.getElementById('basicShareSizeText').textContent = `${pw} × ${ph} px`;
+  document.getElementById('basicPrintSizeText').textContent = `${pxToMm(pw)} × ${pxToMm(ph)} mm`;
+  document.getElementById('basicExportMmText').textContent = `${basicPrintMm.value}mm`;
 }
 
-[basicThreshold, basicScale, basicRes].forEach(el => el.addEventListener('input', () => {
+function highlightBasicPreset() {
+  const mm = parseInt(basicPrintMm.value, 10);
+  document.querySelectorAll('[data-basic-preset]').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.basicPreset, 10) === mm);
+  });
+}
+
+document.querySelectorAll('[data-basic-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mm = parseInt(btn.dataset.basicPreset, 10);
+    basicPrintMm.value = mm;
+    basicPrintMmVal.textContent = mm;
+    updateBasicSizeHint();
+    highlightBasicPreset();
+  });
+});
+
+[basicThreshold, basicScale, basicRes, basicPrintMm].forEach(el => el.addEventListener('input', () => {
   basicThresholdVal.textContent = basicThreshold.value;
   basicScaleVal.textContent = basicScale.value;
   basicResVal.textContent = basicRes.value;
+  basicPrintMmVal.textContent = basicPrintMm.value;
   updateBasicSizeHint();
+  highlightBasicPreset();
 }));
 basicThreshold.addEventListener('change', () => basicImage && renderBasic());
 basicScale.addEventListener('change', () => basicImage && renderBasic());
 basicRes.addEventListener('change', () => basicImage && renderBasic());
 basicGenBtn.addEventListener('click', () => basicImage && renderBasic());
 updateBasicSizeHint();
+highlightBasicPreset();
+
+// 一次性导出 2 张 300 DPI 透明 PNG，保持原图比例（mm = 长边）
+document.getElementById('basicPrintAllBtn').addEventListener('click', () => {
+  if (!basicImage) return;
+  const thr = parseInt(basicThreshold.value, 10);
+  const scale = parseInt(basicScale.value, 10);
+  const printMm = parseInt(basicPrintMm.value, 10);
+  const includeRegMarks = document.getElementById('basicRegMark').checked;
+  const targetLongPx = mmToPx(printMm);
+  // 按输入图长边对应 mm，短边按比例缩
+  const ar = basicImage.width / basicImage.height;
+  let longW = Math.max(20, Math.round(targetLongPx / (2 * scale)));
+  let w, h;
+  if (ar >= 1) { w = longW; h = Math.max(20, Math.round(w / ar)); }
+  else        { h = longW; w = Math.max(20, Math.round(h * ar)); }
+  const btn = document.getElementById('basicPrintAllBtn');
+  btn.disabled = true; const origText = btn.textContent;
+  btn.textContent = '渲染中…';
+  setTimeout(() => {
+    try {
+      const { bin } = toBinary(basicImage, thr, w, h);
+      const { s1, s2, W, H } = generateBasicShares(bin, w, h, scale);
+      const tag = includeRegMarks ? '_withmarks' : '';
+      [['s1', s1], ['s2', s2]].forEach(([which, imgData], i) => {
+        setTimeout(() => {
+          // 透明化 + 可选 reg marks
+          const out = new ImageData(W, H);
+          for (let j = 0; j < imgData.data.length; j += 4) {
+            const r = imgData.data[j], g = imgData.data[j+1], b = imgData.data[j+2];
+            out.data[j] = r; out.data[j+1] = g; out.data[j+2] = b;
+            out.data[j+3] = (r === 255 && g === 255 && b === 255) ? 0 : 255;
+          }
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = W; tempCanvas.height = H;
+          const tCtx = tempCanvas.getContext('2d');
+          tCtx.putImageData(out, 0, 0);
+          if (includeRegMarks) addRegistrationMarks(tCtx, W, H);
+          const a = document.createElement('a');
+          a.href = tempCanvas.toDataURL('image/png');
+          a.download = `basic_${which}_${printMm}mm_300dpi${tag}.png`;
+          a.click();
+        }, i * 400);
+      });
+    } finally {
+      setTimeout(() => { btn.disabled = false; btn.textContent = origText; }, 1200);
+    }
+  }, 50);
+});
 
 function renderBasic() {
   if (!basicImage) return;
@@ -928,7 +1019,7 @@ const colorOverlay = document.getElementById('colorOverlay');
 colorFile.addEventListener('change', (e) => {
   const f = e.target.files[0]; if (!f) return;
   const img = new Image();
-  img.onload = () => { colorImage = img; colorGenBtn.disabled = false; colorPrintAllBtn.disabled = false; renderColor(); };
+  img.onload = () => { colorImage = img; colorGenBtn.disabled = false; colorPrintAllBtn.disabled = false; updateColorSizeHint(); renderColor(); };
   img.src = URL.createObjectURL(f);
 });
 
@@ -946,7 +1037,7 @@ colorDemoBtn.addEventListener('click', () => {
   // 加一个色块
   ctx.fillStyle = '#f59e0b'; ctx.fillRect(c.width - 30, 10, 20, 80);
   const img = new Image();
-  img.onload = () => { colorImage = img; colorGenBtn.disabled = false; colorPrintAllBtn.disabled = false; renderColor(); };
+  img.onload = () => { colorImage = img; colorGenBtn.disabled = false; colorPrintAllBtn.disabled = false; updateColorSizeHint(); renderColor(); };
   img.src = c.toDataURL();
 });
 
@@ -954,8 +1045,15 @@ function updateColorSizeHint() {
   const res = parseInt(colorRes.value, 10);
   const scale = parseInt(colorScale.value, 10);
   const share = res * 2 * scale;
-  document.getElementById('colorShareSizeText').textContent = `${share} × ${share} px`;
-  document.getElementById('colorPrintSizeText').textContent = `${pxToMm(share)} × ${pxToMm(share)} mm`;
+  let pw = share, ph = share;
+  if (colorImage) {
+    const ar = colorImage.width / colorImage.height;
+    if (ar >= 1) ph = Math.round(share / ar);
+    else pw = Math.round(share * ar);
+  }
+  document.getElementById('colorShareSizeText').textContent = `${pw} × ${ph} px`;
+  document.getElementById('colorPrintSizeText').textContent = `${pxToMm(pw)} × ${pxToMm(ph)} mm`;
+  document.getElementById('colorExportMmText').textContent = `${colorPrintMm.value}mm`;
 }
 
 function highlightColorPreset() {
@@ -1043,10 +1141,13 @@ document.getElementById('colorPrintAllBtn').addEventListener('click', () => {
   const printMm = parseInt(colorPrintMm.value, 10);
   const exposure = parseInt(colorExposure.value, 10) / 100;
   const includeRegMarks = document.getElementById('colorRegMark').checked;
-  const targetPx = Math.round(printMm * 300 / 25.4);
-  // generateColorShares: W = w * 2 * scale，所以 w = targetPx / (2*scale)
-  const w = Math.max(20, Math.round(targetPx / (2 * scale)));
-  const h = w;
+  const targetLongPx = mmToPx(printMm);
+  // mm = 长边，短边按原图比例缩
+  const ar = colorImage.width / colorImage.height;
+  let longInput = Math.max(20, Math.round(targetLongPx / (2 * scale)));
+  let w, h;
+  if (ar >= 1) { w = longInput; h = Math.max(20, Math.round(w / ar)); }
+  else        { h = longInput; w = Math.max(20, Math.round(h * ar)); }
   const btn = document.getElementById('colorPrintAllBtn');
   btn.disabled = true; const origText = btn.textContent;
   btn.textContent = '渲染中…';
@@ -1312,6 +1413,7 @@ function updateHtSizeHint() {
   const share = res * N;
   document.getElementById('htShareSizeText').textContent = `${share} × ${share} px`;
   document.getElementById('htPrintSizeText').textContent = `${pxToMm(share)} × ${pxToMm(share)} mm`;
+  document.getElementById('htExportMmText').textContent = `${htPrintMm.value}mm`;
 }
 
 function highlightHtPreset() {
