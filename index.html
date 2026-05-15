@@ -357,39 +357,8 @@
     line-height: 1;
   }
   .ctrl-info:hover { color: var(--text); border-color: var(--text-muted); }
-  /* Tooltip 浮在 ? 右边 */
-  .ctrl-info[data-tip]:hover::after {
-    content: attr(data-tip);
-    position: absolute;
-    left: calc(100% + 12px);
-    top: 50%;
-    transform: translateY(-50%);
-    background: var(--text);
-    color: var(--bg);
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    width: 280px;
-    white-space: normal;
-    text-align: left;
-    line-height: 1.55;
-    z-index: 100;
-    font-family: ui-sans-serif, -apple-system, sans-serif;
-    letter-spacing: 0;
-    pointer-events: none;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  }
-  .ctrl-info[data-tip]:hover::before {
-    content: "";
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 2px;
-    border: 6px solid transparent;
-    border-right-color: var(--text);
-    z-index: 100;
-  }
+  /* （旧的 CSS :hover::after tooltip 已删除——现在用 .float-tip JS 浮窗，
+      会更聪明地处理位置、换行、? 在 overflow 容器里的逃逸） */
   /* Preset chips sub-row — 跟 slider 起始位置对齐 */
   .ctrl-presets {
     display: flex;
@@ -768,315 +737,6 @@
   }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
-  /* ============ Layout-edit mode (drag-reorder main .controls items) ============ */
-  body.layout-edit .controls {
-    outline: 2px dashed var(--accent);
-    outline-offset: 2px;
-  }
-  body.layout-edit .controls > * {
-    outline: 1px dashed var(--text-muted);
-    outline-offset: 2px;
-    cursor: grab;
-    user-select: none;
-    border-radius: 4px;
-  }
-  body.layout-edit .controls > *:hover {
-    outline-color: var(--accent);
-    background: var(--accent-tint);
-  }
-  body.layout-edit .controls input[type=range],
-  body.layout-edit .controls button,
-  body.layout-edit .controls input[type=file],
-  body.layout-edit .controls input[type=color],
-  body.layout-edit .controls input[type=checkbox],
-  body.layout-edit .preset-chips,
-  body.layout-edit .preset-chip {
-    pointer-events: none;
-  }
-  body.layout-edit .controls > *.le-dragging {
-    opacity: 0.35;
-  }
-  body.layout-edit .controls > *.le-drop-before {
-    box-shadow: -3px 0 0 var(--accent);
-  }
-  body.layout-edit .controls > *.le-drop-after {
-    box-shadow: 3px 0 0 var(--accent);
-  }
-  body.layout-edit .le-banner {
-    position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: #fff;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-family: ui-monospace, monospace;
-    letter-spacing: 0.1em;
-    z-index: 1001;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  }
-  body:not(.layout-edit) .le-banner { display: none; }
-
-  /* ============ Tweak panel (dev UI iteration) ============ */
-  .tweak-toggle-btn {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    background: var(--text);
-    color: var(--bg);
-    padding: 8px 12px;
-    border: 1px solid var(--text);
-    border-radius: 20px;
-    font-size: 10px;
-    font-family: ui-monospace, monospace;
-    cursor: pointer;
-    z-index: 998;
-    letter-spacing: 0.1em;
-    transition: opacity 0.15s;
-  }
-  .tweak-toggle-btn:hover { opacity: 0.85; }
-
-  /* ============ Text-edit mode ============ */
-  .text-edit-btn {
-    position: fixed;
-    bottom: 16px;
-    right: 110px;             /* 放在 TWEAK 按钮左边 */
-    background: var(--bg-elev);
-    color: var(--text);
-    padding: 8px 12px;
-    border: 1px solid var(--border-strong);
-    border-radius: 20px;
-    font-size: 10px;
-    font-family: ui-monospace, monospace;
-    cursor: pointer;
-    z-index: 998;
-    letter-spacing: 0.1em;
-  }
-  .text-edit-btn:hover { border-color: var(--text-muted); }
-  .text-edit-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-  /* 编辑模式下：让所有 [data-edit-key] 元素可点击编辑 */
-  body.text-edit-mode [data-edit-key] {
-    outline: 1px dashed var(--accent);
-    outline-offset: 2px;
-    cursor: text;
-    transition: outline-color 0.15s;
-  }
-  body.text-edit-mode [data-edit-key]:hover {
-    outline-color: var(--accent-2, var(--accent));
-    outline-style: solid;
-    background: var(--accent-tint);
-  }
-  body.text-edit-mode [data-edit-key]:focus {
-    outline: 2px solid var(--accent) !important;
-    background: var(--accent-tint);
-  }
-  body.text-edit-mode .file-mini { pointer-events: none; }   /* 编辑模式下别误触发文件选择 */
-  body.text-edit-mode input[type="range"],
-  body.text-edit-mode input[type="checkbox"],
-  body.text-edit-mode .preset-chip,
-  body.text-edit-mode .tab {
-    pointer-events: none;
-  }
-  /* 但是 tab、preset-chip 还是要能编辑文字，让 contenteditable 接收事件 */
-  body.text-edit-mode [data-edit-key].preset-chip,
-  body.text-edit-mode [data-edit-key].tab {
-    pointer-events: auto;
-  }
-
-  /* Text-edit panel */
-  .te-panel {
-    position: fixed;
-    bottom: 56px;
-    right: 110px;
-    width: 280px;
-    z-index: 999;
-    background: var(--bg-elev);
-    border: 1px solid var(--border-strong);
-    border-radius: 10px;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.14);
-    padding: 12px;
-    font-family: ui-monospace, monospace;
-    font-size: 11px;
-    display: none;
-  }
-  .te-panel.show { display: block; }
-  .te-panel h4 {
-    margin: 0 0 8px;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-  }
-  .te-panel .te-hint {
-    color: var(--text-muted);
-    line-height: 1.5;
-    margin-bottom: 8px;
-  }
-  .te-panel button {
-    width: 100%;
-    margin-bottom: 6px;
-    font-size: 11px;
-    padding: 7px 10px;
-    background: var(--bg);
-    border: 1px solid var(--border-strong);
-    border-radius: 6px;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .te-panel button:hover { border-color: var(--text-muted); }
-  .te-snapshot {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 10px;
-    max-height: 200px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    color: var(--text-muted);
-    margin-top: 6px;
-    display: none;
-  }
-  .te-snapshot.show { display: block; }
-
-  .tweak-panel {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    width: 260px;
-    min-width: 220px;
-    min-height: 200px;
-    max-width: 480px;
-    max-height: calc(100vh - 32px);
-    overflow: auto;
-    resize: both;            /* 可拖角拉伸 */
-    background: var(--bg-elev);
-    border: 1px solid var(--border-strong);
-    border-radius: 8px;
-    padding: 12px;
-    font-family: ui-monospace, "SF Mono", monospace;
-    font-size: 11px;
-    z-index: 999;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  }
-  [data-theme="light"] .tweak-panel { box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-  .tweak-panel.hidden { display: none; }
-  .tweak-panel .tp-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    font-size: 10px;
-    color: var(--text);
-    letter-spacing: 0.1em;
-    cursor: move;            /* 拖拽 handle */
-    user-select: none;
-    padding: 4px 6px;
-    margin: -6px -6px 8px;
-    border-bottom: 1px solid var(--border);
-  }
-  .tweak-panel .tp-header::before {
-    content: "⠿ ";
-    color: var(--text-faint);
-  }
-  .tweak-panel .tp-close {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 14px;
-    width: 22px;
-    height: 22px;
-    border-radius: 4px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    font-family: inherit;
-  }
-  .tweak-panel .tp-close:hover { color: var(--text); border-color: var(--border-strong); }
-  .tweak-panel h4 {
-    font-size: 9px;
-    color: var(--text-faint);
-    letter-spacing: 0.16em;
-    margin: 14px 0 8px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--border);
-    font-weight: 500;
-  }
-  .tweak-panel h4:first-of-type { margin-top: 0; }
-  .tp-row {
-    display: grid;
-    grid-template-columns: 86px 1fr 38px;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 5px;
-    font-size: 10px;
-  }
-  .tp-row .tp-label { color: var(--text-muted); }
-  .tp-row input[type="range"] {
-    width: 100%;
-    accent-color: var(--accent);
-    margin: 0;
-  }
-  .tp-row input[type="color"] {
-    width: 100%;
-    height: 22px;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    cursor: pointer;
-    background: transparent;
-  }
-  .tp-row output {
-    text-align: right;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-  }
-  .tweak-panel .tp-footer {
-    margin-top: 14px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .tweak-panel .tp-footer button {
-    width: 100%;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 7px 10px;
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    font-family: inherit;
-    border-radius: 4px;
-  }
-  .tweak-panel .tp-footer button:hover {
-    border-color: var(--text-muted);
-    background: var(--bg-card);
-  }
-  .tweak-panel .tp-snapshot {
-    font-family: inherit;
-    font-size: 10px;
-    color: var(--text-muted);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 6px 8px;
-    margin-top: 6px;
-    white-space: pre-wrap;
-    max-height: 120px;
-    overflow-y: auto;
-    line-height: 1.5;
-    display: none;
-  }
-
   /* ============ Mobile ============ */
   @media (max-width: 1100px) {
     .grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -1125,11 +785,6 @@
     h1 { font-size: 16px; }
     .tab { padding: 8px 10px; font-size: 11px; }
   }
-  @media (max-width: 640px) {
-    .tweak-panel { width: calc(100vw - 16px); right: 8px; bottom: 8px; }
-    .tweak-toggle-btn { bottom: 12px; right: 12px; }
-  }
-
   /* ============================================================
      SIDEBAR LAYOUT — sticky topbar + left sidebar + right main
      ============================================================ */
@@ -1494,6 +1149,124 @@
     }
     .sidebar-scroll { max-height: 60vh; }
   }
+
+  /* ============================================================
+     ✨ MICRO-DELIGHTS — 纯设计层小细节，无功能影响
+     ============================================================ */
+
+  /* 入场动画曲线（spring-out 减速）*/
+  @keyframes vc-fade-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes vc-fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes vc-slide-right {
+    from { opacity: 0; transform: translateX(-18px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes vc-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* 顶栏从上方淡入 */
+  .topbar-sticky {
+    animation: vc-fade-down 0.55s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+  /* sidebar 从左滑入，稍晚一点 */
+  .sidebar {
+    animation: vc-slide-right 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.12s backwards;
+  }
+  /* 主区淡入 */
+  .main {
+    animation: vc-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+  }
+  /* main-panel 里的卡片错峰从下浮上来（瀑布感）*/
+  .main-panel.active .grid-2 > .card,
+  .main-panel.active .grid-3 > .card {
+    animation: vc-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+  .main-panel.active .grid-2 > .card:nth-child(1),
+  .main-panel.active .grid-3 > .card:nth-child(1) { animation-delay: 0.30s; }
+  .main-panel.active .grid-2 > .card:nth-child(2),
+  .main-panel.active .grid-3 > .card:nth-child(2) { animation-delay: 0.36s; }
+  .main-panel.active .grid-2 > .card:nth-child(3),
+  .main-panel.active .grid-3 > .card:nth-child(3) { animation-delay: 0.42s; }
+  .main-panel.active .grid-2 > .card:nth-child(4) { animation-delay: 0.48s; }
+  /* 警告 banner 在卡片前面（上方）→ 先于卡片入场 */
+  .main-panel.active > .warning-banner {
+    animation: vc-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.24s backwards;
+  }
+  /* info 块在最下面 → 最后入场 */
+  .main-panel.active > .info {
+    animation: vc-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.55s backwards;
+  }
+  /* 3-shares 的小标题（① ② ③） */
+  .main-panel.active > h3[style] {
+    animation: vc-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  /* 卡片轻微 hover lift（指针在上时给个反馈）*/
+  .card {
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.15s ease;
+  }
+  .card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: var(--border-strong);
+  }
+
+  /* 闪烁竖条加一抹微光（橙色辉散）*/
+  .cursor-blink {
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+
+  /* preset-chip active 状态加细微 ring */
+  .preset-chip.active {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  /* file-mini 空状态时一个低频脉动（让人注意到这里能上传）*/
+  @keyframes vc-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent); }
+    50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+  .file-mini:not(.has-file) {
+    animation: vc-pulse 2.4s ease-in-out infinite;
+  }
+
+  /* 主按钮（导出 PNG）hover 时微微抬起 */
+  .sidebar-actions .action-group button {
+    transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+  }
+  .sidebar-actions .action-group button:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  /* tab 切换时新面板淡入 */
+  .main-panel.active {
+    animation-fill-mode: backwards;
+  }
+
+  /* 减少动画偏好的人：全部尊重 */
+  @media (prefers-reduced-motion: reduce) {
+    .topbar-sticky,
+    .sidebar,
+    .main,
+    .main-panel.active .grid-2 > .card,
+    .main-panel.active .grid-3 > .card,
+    .main-panel.active > .info,
+    .main-panel.active > .warning-banner,
+    .main-panel.active > h3[style],
+    .file-mini:not(.has-file) {
+      animation: none !important;
+    }
+    .card:hover { transform: none; }
+  }
 </style>
 </head>
 <body>
@@ -1594,7 +1367,7 @@
           </label>
         </div>
         <div class="desc">黑色=要隐藏的内容</div>
-        <div class="canvas-wrap"><canvas id="basicOrig"></canvas><div class="empty" id="basicOrigEmpty">📁 点击或拖拽图片到此<br>开始加密</div></div>
+        <div class="canvas-wrap"><canvas id="basicOrig"></canvas><div class="empty" id="basicOrigEmpty">📁 点击或拖拽<br>上传图片</div></div>
       </div>
       <div class="card">
         <h3>叠加结果预览 S1 + S2</h3>
@@ -1719,7 +1492,7 @@
           </label>
         </div>
         <div class="desc">CMYK 四通道分别加密（4 套 2-out-of-2）</div>
-        <div class="canvas-wrap"><canvas id="colorOrig"></canvas><div class="empty" id="colorOrigEmpty">📁 点击或拖拽图片到此<br>开始加密</div></div>
+        <div class="canvas-wrap"><canvas id="colorOrig"></canvas><div class="empty" id="colorOrigEmpty">📁 点击或拖拽<br>上传图片</div></div>
       </div>
       <div class="card">
         <h3>叠加结果预览 S1 + S2</h3>
@@ -1950,72 +1723,6 @@
 </div>
 
 <!-- ============ TWEAK PANEL (dev mode UI iteration) ============ -->
-<button class="tweak-toggle-btn" id="tweakToggleBtn">🎛 TWEAK</button>
-<button class="text-edit-btn" id="textEditBtn">📝 TEXT</button>
-<div class="te-panel" id="tePanel">
-  <h4>📝 文字编辑模式</h4>
-  <div class="te-hint">
-    点击页面任何 <b style="color: var(--accent);">橙色虚线框</b> 内的文字直接编辑。<br>
-    改动会自动保存到浏览器本地。
-  </div>
-  <button id="teExportBtn" type="button">📋 复制所有改动 JSON</button>
-  <button id="teResetBtn" type="button">↺ 重置所有文字</button>
-  <pre class="te-snapshot" id="teSnapshot"></pre>
-</div>
-<div class="tweak-panel hidden" id="tweakPanel">
-  <div class="tp-header">
-    <span>🎛 TWEAK PANEL · LIVE</span>
-    <button class="tp-close" id="tweakClose" type="button">×</button>
-  </div>
-
-  <h4>TYPOGRAPHY</h4>
-  <div class="tp-row"><span class="tp-label">h1 size</span><input type="range" min="14" max="48" step="1" value="35" data-var="--h1-size" data-unit="px"><output>35</output></div>
-  <div class="tp-row"><span class="tp-label">body size</span><input type="range" min="11" max="24" step="1" value="18" data-var="--body-size" data-unit="px"><output>18</output></div>
-  <div class="tp-row"><span class="tp-label">letter sp.</span><input type="range" min="-20" max="20" step="1" value="8" data-var="--letter-spacing" data-unit="" data-suffix="em" data-scale="0.001"><output>8</output></div>
-
-  <h4>SPACING</h4>
-  <div class="tp-row"><span class="tp-label">body pad Y</span><input type="range" min="8" max="64" step="2" value="44" data-var="--body-pad-y" data-unit="px"><output>44</output></div>
-  <div class="tp-row"><span class="tp-label">body pad X</span><input type="range" min="8" max="48" step="2" value="30" data-var="--body-pad-x" data-unit="px"><output>30</output></div>
-  <div class="tp-row"><span class="tp-label">card pad</span><input type="range" min="6" max="32" step="1" value="21" data-var="--card-pad" data-unit="px"><output>21</output></div>
-  <div class="tp-row"><span class="tp-label">grid gap</span><input type="range" min="2" max="32" step="2" value="20" data-var="--grid-gap" data-unit="px"><output>20</output></div>
-  <div class="tp-row"><span class="tp-label">tab pad X</span><input type="range" min="6" max="32" step="1" value="17" data-var="--tab-pad-x" data-unit="px"><output>17</output></div>
-  <div class="tp-row"><span class="tp-label">tab pad Y</span><input type="range" min="4" max="20" step="1" value="9" data-var="--tab-pad-y" data-unit="px"><output>9</output></div>
-
-  <h4>CONTROLS PANEL</h4>
-  <div class="tp-row"><span class="tp-label">name size</span><input type="range" min="11" max="24" step="1" value="16" data-var="--ctrl-name-size" data-unit="px"><output>16</output></div>
-  <div class="tp-row"><span class="tp-label">value size</span><input type="range" min="11" max="24" step="1" value="14" data-var="--ctrl-value-size" data-unit="px"><output>14</output></div>
-  <div class="tp-row"><span class="tp-label">col gap</span><input type="range" min="2" max="32" step="1" value="4" data-var="--ctrl-col-gap" data-unit="px"><output>4</output></div>
-  <div class="tp-row"><span class="tp-label">row gap</span><input type="range" min="2" max="24" step="1" value="8" data-var="--ctrl-row-gap" data-unit="px"><output>8</output></div>
-  <div class="tp-row"><span class="tp-label">action gap</span><input type="range" min="0" max="40" step="2" value="20" data-var="--ctrl-actions-gap" data-unit="px"><output>20</output></div>
-  <div class="tp-row"><span class="tp-label">name col w</span><input type="range" min="80" max="280" step="4" value="100" data-var="--ctrl-name-col" data-unit="px"><output>100</output></div>
-  <div class="tp-row"><span class="tp-label">unit col w</span><input type="range" min="30" max="120" step="2" value="50" data-var="--ctrl-unit-col" data-unit="px"><output>50</output></div>
-  <div class="tp-row"><span class="tp-label">reminder L</span><input type="range" min="-60" max="120" step="2" value="24" data-var="--ctrl-reminder-padl" data-unit="px"><output>24</output></div>
-  <div class="tp-row"><span class="tp-label">hint size</span><input type="range" min="10" max="20" step="1" value="13" data-var="--hint-size" data-unit="px"><output>13</output></div>
-  <div class="tp-row"><span class="tp-label">hint ref size</span><input type="range" min="9" max="20" step="1" value="12" data-var="--hint-ref-size" data-unit="px"><output>12</output></div>
-  <div class="tp-row"><span class="tp-label">name dark</span><input type="color" id="tweakNameDark" value="#d4d4d4"><output id="tweakNameDarkVal">#d4d4d4</output></div>
-  <div class="tp-row"><span class="tp-label">name light</span><input type="color" id="tweakNameLight" value="#333333"><output id="tweakNameLightVal">#333333</output></div>
-
-  <h4>BORDER RADIUS</h4>
-  <div class="tp-row"><span class="tp-label">card</span><input type="range" min="0" max="32" step="1" value="14" data-var="--card-radius" data-unit="px"><output>14</output></div>
-  <div class="tp-row"><span class="tp-label">button</span><input type="range" min="0" max="28" step="1" value="17" data-var="--btn-radius" data-unit="px"><output>17</output></div>
-
-  <h4>EFFECTS</h4>
-  <div class="tp-row"><span class="tp-label">dot grid</span><input type="range" min="8" max="48" step="2" value="26" data-var="--dot-size" data-unit="px"><output>26</output></div>
-  <div class="tp-row"><span class="tp-label">blink (ms)</span><input type="range" min="300" max="2500" step="50" value="1250" data-var="--blink-speed" data-unit="ms"><output>1250</output></div>
-
-  <h4>COLOR</h4>
-  <div class="tp-row"><span class="tp-label">accent</span><input type="color" id="tweakAccent" value="#ff7a45"><output id="tweakAccentVal">#ff7a45</output></div>
-
-  <div class="tp-footer">
-    <button id="tweakCopy" type="button">📋 COPY CSS SNAPSHOT</button>
-    <button id="tweakEditLayout" type="button">🔧 EDIT MAIN LAYOUT</button>
-    <button id="tweakReset" type="button">↺ RESET ALL</button>
-    <pre class="tp-snapshot" id="tweakSnapshot"></pre>
-  </div>
-</div>
-
-<div class="le-banner">🔧 LAYOUT EDIT — DRAG MAIN CONTROLS TO REORDER · CLICK 'DONE' TO EXIT</div>
-
 <script>
 // =================== Theme toggle (light / dark) ===================
 (function() {
@@ -2036,210 +1743,6 @@
   btn.addEventListener('click', () => {
     apply(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
-})();
-
-// =================== Tweak panel ===================
-(function() {
-  const toggleBtn = document.getElementById('tweakToggleBtn');
-  const panel = document.getElementById('tweakPanel');
-  const closeBtn = document.getElementById('tweakClose');
-  const copyBtn = document.getElementById('tweakCopy');
-  const resetBtn = document.getElementById('tweakReset');
-  const snapshotEl = document.getElementById('tweakSnapshot');
-  const accentInput = document.getElementById('tweakAccent');
-  const accentVal = document.getElementById('tweakAccentVal');
-  const sliders = panel.querySelectorAll('input[data-var]');
-  const initialValues = {};
-  sliders.forEach(s => initialValues[s.dataset.var] = s.value);
-  initialValues['--accent'] = accentInput.value;
-
-  function show() { panel.classList.remove('hidden'); toggleBtn.style.display = 'none'; }
-  function hide() { panel.classList.add('hidden');    toggleBtn.style.display = ''; }
-  toggleBtn.addEventListener('click', show);
-  closeBtn.addEventListener('click', hide);
-
-  function applySlider(input) {
-    const raw = parseFloat(input.value);
-    const scale = parseFloat(input.dataset.scale || '1');
-    const value = (raw * scale).toString();
-    const unit = input.dataset.unit || '';
-    const suffix = input.dataset.suffix || '';
-    document.documentElement.style.setProperty(input.dataset.var, value + unit + suffix);
-    const out = input.parentElement.querySelector('output');
-    if (out) out.textContent = input.value;
-  }
-  sliders.forEach(input => {
-    applySlider(input);
-    input.addEventListener('input', () => applySlider(input));
-  });
-
-  function applyAccent() {
-    document.documentElement.style.setProperty('--accent', accentInput.value);
-    document.documentElement.style.setProperty('--accent-2', accentInput.value);
-    accentVal.textContent = accentInput.value;
-  }
-  accentInput.addEventListener('input', applyAccent);
-  applyAccent();
-
-  // ctrl name color pickers (dark / light 各自一个)
-  const ctrlNameDarkInput = document.getElementById('tweakNameDark');
-  const ctrlNameDarkVal = document.getElementById('tweakNameDarkVal');
-  const ctrlNameLightInput = document.getElementById('tweakNameLight');
-  const ctrlNameLightVal = document.getElementById('tweakNameLightVal');
-  function applyCtrlNameDark() {
-    if (!ctrlNameDarkInput) return;
-    document.documentElement.style.setProperty('--ctrl-name-dark', ctrlNameDarkInput.value);
-    ctrlNameDarkVal.textContent = ctrlNameDarkInput.value;
-  }
-  function applyCtrlNameLight() {
-    if (!ctrlNameLightInput) return;
-    document.documentElement.style.setProperty('--ctrl-name-light', ctrlNameLightInput.value);
-    ctrlNameLightVal.textContent = ctrlNameLightInput.value;
-  }
-  if (ctrlNameDarkInput) {
-    ctrlNameDarkInput.addEventListener('input', applyCtrlNameDark);
-    applyCtrlNameDark();
-    initialValues['--ctrl-name-dark'] = ctrlNameDarkInput.value;
-  }
-  if (ctrlNameLightInput) {
-    ctrlNameLightInput.addEventListener('input', applyCtrlNameLight);
-    applyCtrlNameLight();
-    initialValues['--ctrl-name-light'] = ctrlNameLightInput.value;
-  }
-
-  copyBtn.addEventListener('click', () => {
-    const lines = ['/* === VC Playground tweaked CSS variables === */', ':root {'];
-    sliders.forEach(input => {
-      const raw = parseFloat(input.value);
-      const scale = parseFloat(input.dataset.scale || '1');
-      const value = (raw * scale).toString();
-      const unit = input.dataset.unit || '';
-      const suffix = input.dataset.suffix || '';
-      lines.push(`  ${input.dataset.var}: ${value + unit + suffix};   /* ${input.value} */`);
-    });
-    lines.push(`  --accent: ${accentInput.value};`);
-    if (ctrlNameDarkInput) lines.push(`  --ctrl-name-dark: ${ctrlNameDarkInput.value};`);
-    if (ctrlNameLightInput) lines.push(`  --ctrl-name-light: ${ctrlNameLightInput.value};`);
-    lines.push('}');
-    const text = lines.join('\n');
-    snapshotEl.textContent = text;
-    snapshotEl.style.display = 'block';
-    try {
-      navigator.clipboard.writeText(text).then(() => {
-        copyBtn.textContent = '✓ COPIED TO CLIPBOARD';
-        setTimeout(() => copyBtn.textContent = '📋 COPY CSS SNAPSHOT', 1500);
-      });
-    } catch (e) {
-      copyBtn.textContent = '📋 COPY CSS SNAPSHOT';
-    }
-  });
-
-  resetBtn.addEventListener('click', () => {
-    sliders.forEach(input => {
-      input.value = initialValues[input.dataset.var];
-      applySlider(input);
-    });
-    accentInput.value = initialValues['--accent'];
-    applyAccent();
-    if (ctrlNameDarkInput && initialValues['--ctrl-name-dark']) {
-      ctrlNameDarkInput.value = initialValues['--ctrl-name-dark'];
-      applyCtrlNameDark();
-    }
-    if (ctrlNameLightInput && initialValues['--ctrl-name-light']) {
-      ctrlNameLightInput.value = initialValues['--ctrl-name-light'];
-      applyCtrlNameLight();
-    }
-    snapshotEl.style.display = 'none';
-  });
-
-  // ---- EDIT LAYOUT mode for main .controls bars ----
-  const editLayoutBtn = document.getElementById('tweakEditLayout');
-  let leSrc = null;
-
-  function leDragStart(e) {
-    leSrc = this;
-    this.classList.add('le-dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    try { e.dataTransfer.setData('text/plain', ''); } catch(err) {}
-  }
-  function leDragEnd() {
-    this.classList.remove('le-dragging');
-    document.querySelectorAll('.controls > *').forEach(el => {
-      el.classList.remove('le-drop-before', 'le-drop-after');
-    });
-    leSrc = null;
-  }
-  function leDragOver(e) {
-    e.preventDefault();
-    if (!leSrc || leSrc === this) return;
-    const rect = this.getBoundingClientRect();
-    const after = (e.clientX - rect.left) > rect.width / 2;
-    this.classList.toggle('le-drop-before', !after);
-    this.classList.toggle('le-drop-after', after);
-  }
-  function leDragLeave() {
-    this.classList.remove('le-drop-before', 'le-drop-after');
-  }
-  function leDrop(e) {
-    e.preventDefault();
-    if (!leSrc || leSrc === this) return;
-    const rect = this.getBoundingClientRect();
-    const after = (e.clientX - rect.left) > rect.width / 2;
-    this.parentNode.insertBefore(leSrc, after ? this.nextSibling : this);
-    this.classList.remove('le-drop-before', 'le-drop-after');
-  }
-
-  function enterLayoutEdit() {
-    document.body.classList.add('layout-edit');
-    editLayoutBtn.textContent = '✓ DONE EDITING';
-    document.querySelectorAll('.controls > *').forEach(el => {
-      el.draggable = true;
-      el.addEventListener('dragstart', leDragStart);
-      el.addEventListener('dragend', leDragEnd);
-      el.addEventListener('dragover', leDragOver);
-      el.addEventListener('dragleave', leDragLeave);
-      el.addEventListener('drop', leDrop);
-    });
-  }
-  function exitLayoutEdit() {
-    document.body.classList.remove('layout-edit');
-    editLayoutBtn.textContent = '🔧 EDIT MAIN LAYOUT';
-    document.querySelectorAll('.controls > *').forEach(el => {
-      el.draggable = false;
-      el.removeEventListener('dragstart', leDragStart);
-      el.removeEventListener('dragend', leDragEnd);
-      el.removeEventListener('dragover', leDragOver);
-      el.removeEventListener('dragleave', leDragLeave);
-      el.removeEventListener('drop', leDrop);
-    });
-  }
-  editLayoutBtn.addEventListener('click', () => {
-    if (document.body.classList.contains('layout-edit')) exitLayoutEdit();
-    else enterLayoutEdit();
-  });
-
-  // ---- Drag panel by header ----
-  const header = panel.querySelector('.tp-header');
-  let dragging = false, dx = 0, dy = 0;
-  header.addEventListener('mousedown', (e) => {
-    if (e.target.tagName === 'BUTTON') return;
-    dragging = true;
-    const r = panel.getBoundingClientRect();
-    dx = e.clientX - r.left;
-    dy = e.clientY - r.top;
-    document.body.style.userSelect = 'none';
-  });
-  window.addEventListener('mousemove', (e) => {
-    if (!dragging) return;
-    panel.style.left = (e.clientX - dx) + 'px';
-    panel.style.top = (e.clientY - dy) + 'px';
-    panel.style.right = 'auto';
-    panel.style.bottom = 'auto';
-  });
-  window.addEventListener('mouseup', () => {
-    if (dragging) { dragging = false; document.body.style.userSelect = ''; }
-  });
-
 })();
 </script>
 
@@ -2275,11 +1778,7 @@ document.querySelectorAll('.card').forEach(card => {
   canvasWrap.classList.add('drop-zone');
 
   // 点击 wrap 触发文件选择
-  canvasWrap.addEventListener('click', (e) => {
-    // 编辑文字模式下别拦截
-    if (document.body.classList.contains('text-edit-mode')) return;
-    fileInput.click();
-  });
+  canvasWrap.addEventListener('click', () => fileInput.click());
 
   // 拖拽
   canvasWrap.addEventListener('dragover', (e) => {
@@ -2501,17 +2000,54 @@ document.querySelectorAll('.tab').forEach(btn => {
   function hide() {
     tip.classList.remove('visible', 'right', 'left', 'below', 'compact');
   }
-  // ? icons
-  document.querySelectorAll('.ctrl-info[data-tip]').forEach(icon => {
-    icon.addEventListener('mouseenter', () => show(icon, icon.dataset.tip));
-    icon.addEventListener('mouseleave', hide);
-  });
-  // preset chips → 显示 mm 值（下方紧凑 tip）
-  document.querySelectorAll('.preset-chip[data-mm]').forEach(chip => {
-    chip.addEventListener('mouseenter', () => show(chip, chip.dataset.mm + ' mm 长边', { pos: 'below', compact: true }));
-    chip.addEventListener('mouseleave', hide);
-  });
+  // ─── 简单可靠的 hover tooltip ───
+  // ? 图标：只有 mouseenter / mouseleave，没有点击事件
+  // preset-chip：mouseenter 显示 mm 提示，mouseleave 隐藏，click 隐藏（防止 click 后 mouseleave 漏发卡住）
+  function bind(el) {
+    if (el.dataset.tipBound) return;
+    el.dataset.tipBound = '1';
+
+    if (el.matches('.preset-chip[data-mm]')) {
+      el.addEventListener('mouseenter', () => {
+        show(el, el.dataset.mm + ' mm 长边', { pos: 'below', compact: true });
+      });
+      el.addEventListener('mouseleave', hide);
+      // 点击后藏起来（用户已选完不需要 hint）
+      el.addEventListener('click', hide);
+    } else if (el.matches('.ctrl-info[data-tip]')) {
+      el.addEventListener('mouseenter', () => show(el, el.dataset.tip));
+      el.addEventListener('mouseleave', hide);
+      // ? 没有功能性 click，但用户可能点。点了后浏览器有时漏发 mouseleave
+      // 让 ? 在 click 时强制重新显示一次，并 stopPropagation 避免父 label 抢焦点
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        show(el, el.dataset.tip);
+      });
+    }
+  }
+
+  function bindAll() {
+    document.querySelectorAll('.ctrl-info[data-tip], .preset-chip[data-mm]').forEach(bind);
+  }
+
+  bindAll();
+
+  // MutationObserver 只观察 .app 子树（避开 .float-tip 自身变更触发反馈循环）
+  if (window.MutationObserver) {
+    const app = document.querySelector('.app');
+    if (app) {
+      new MutationObserver(bindAll).observe(app, {
+        childList: true,
+        subtree: true,
+      });
+    }
+  }
+
+  // 安全网
   document.addEventListener('scroll', hide, true);
+  window.addEventListener('blur', hide);
+  document.addEventListener('mouseleave', hide);
 })();
 
 // =================== Sync sidebar top to topbar height ===================
@@ -2527,146 +2063,6 @@ document.querySelectorAll('.tab').forEach(btn => {
   syncSidebar();
   window.addEventListener('resize', syncSidebar);
   if (window.ResizeObserver) new ResizeObserver(syncSidebar).observe(tb);
-})();
-
-// =================== Text-edit mode ===================
-// 给页面上常见的文字元素分配 data-edit-key（按文档顺序），用户点 📝 TEXT 进入编辑模式，
-// 改动 localStorage 自动存。
-(function() {
-  const STORAGE_KEY = 'vc_text_overrides';
-  const SELECTORS = [
-    'h1', '.author-badge',
-    '.tabs .tab',
-    '.ctrl .ctrl-name',
-    '.ctrl-check .ctrl-name',
-    '.ctrl-check .ctrl-reminder',
-    '.ctrl-unit',
-    '.sidebar-hint .hint-text',
-    '.preset-chip',
-    '.card-head h3',
-    '.card > h3',
-    '.card .desc',
-    '.warning-banner',
-    '.info',
-    '.info b',
-    '.section-label, h3[style]',     /* 3-shares ① ② ③ 小节标题 */
-    '.file-mini-label',
-    '.ctrl-sub-check',
-    '.action-row > button, .ctrl-actions > button',
-    '.sidebar-actions button',
-  ];
-
-  // 1. 给所有候选元素打上 data-edit-key（按文档顺序稳定生成）
-  let counter = 0;
-  document.querySelectorAll(SELECTORS.join(',')).forEach(el => {
-    // 跳过含子元素（除了纯 text + b/code/br/span）的，避免破坏结构
-    // 简单策略：允许元素有子节点，但 contenteditable 时建议只在叶子节点编辑
-    if (!el.dataset.editKey) {
-      el.dataset.editKey = 'te-' + (counter++);
-    }
-  });
-
-  // 2. 从 localStorage 恢复
-  function loadOverrides() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
-    catch (e) { return {}; }
-  }
-  function saveOverrides(map) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); }
-    catch (e) {}
-  }
-  const overrides = loadOverrides();
-  Object.entries(overrides).forEach(([key, text]) => {
-    const el = document.querySelector(`[data-edit-key="${key}"]`);
-    // 只覆盖纯文本（无 HTML 子节点）的元素，避免破坏含 b/code 的结构
-    if (el && (el.children.length === 0 || el.querySelectorAll('*').length === 0)) {
-      el.textContent = text;
-    }
-  });
-
-  // 3. Toggle 按钮
-  const btn = document.getElementById('textEditBtn');
-  const panel = document.getElementById('tePanel');
-  const exportBtn = document.getElementById('teExportBtn');
-  const resetBtn = document.getElementById('teResetBtn');
-  const snapshot = document.getElementById('teSnapshot');
-
-  function enableEdit() {
-    document.body.classList.add('text-edit-mode');
-    btn.classList.add('active');
-    panel.classList.add('show');
-    // 把每个 [data-edit-key] 设成 contenteditable
-    document.querySelectorAll('[data-edit-key]').forEach(el => {
-      // 跳过含复杂子结构的（h1 / .info 含 b/code 的）
-      const hasComplexChildren = el.querySelector('ul, code, br, b, i') !== null;
-      if (hasComplexChildren && el.matches('.info, .warning-banner')) {
-        // 大块文字暂不开 contenteditable，避免编辑破坏 HTML
-        return;
-      }
-      el.setAttribute('contenteditable', 'plaintext-only');
-      el.spellcheck = false;
-    });
-  }
-
-  function disableEdit() {
-    document.body.classList.remove('text-edit-mode');
-    btn.classList.remove('active');
-    panel.classList.remove('show');
-    document.querySelectorAll('[data-edit-key][contenteditable]').forEach(el => {
-      el.removeAttribute('contenteditable');
-    });
-  }
-
-  btn.addEventListener('click', () => {
-    if (document.body.classList.contains('text-edit-mode')) disableEdit();
-    else enableEdit();
-  });
-
-  // 监听编辑：用事件委托捕获所有 contenteditable 元素的 input 事件
-  document.addEventListener('input', (e) => {
-    const el = e.target.closest('[data-edit-key][contenteditable]');
-    if (!el) return;
-    const key = el.dataset.editKey;
-    const map = loadOverrides();
-    const original = el.dataset.originalText !== undefined ? el.dataset.originalText : null;
-    // 首次编辑时记录原始文字（用于 reset）
-    if (original === null) {
-      el.dataset.originalText = el.textContent;
-    }
-    map[key] = el.textContent;
-    saveOverrides(map);
-  });
-
-  // 防止 Enter 换行（plaintext-only 不一定生效）
-  document.addEventListener('keydown', (e) => {
-    if (!document.body.classList.contains('text-edit-mode')) return;
-    const el = e.target.closest('[data-edit-key][contenteditable]');
-    if (!el) return;
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      el.blur();
-    }
-  });
-
-  // Export snapshot
-  exportBtn.addEventListener('click', () => {
-    const map = loadOverrides();
-    const text = JSON.stringify(map, null, 2);
-    snapshot.textContent = text;
-    snapshot.classList.add('show');
-    try {
-      navigator.clipboard.writeText(text);
-      exportBtn.textContent = '✓ 复制到剪贴板了!';
-      setTimeout(() => exportBtn.textContent = '📋 复制所有改动 JSON', 1500);
-    } catch (e) {}
-  });
-
-  // Reset
-  resetBtn.addEventListener('click', () => {
-    if (!confirm('清空所有文字改动，恢复原文？')) return;
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload();
-  });
 })();
 
 // =================== Utilities ===================
