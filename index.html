@@ -6,92 +6,505 @@
 <meta name="theme-color" content="#0f0f12">
 <title>视觉密码学演示 Visual Cryptography · by Suanovil (Sue)</title>
 <style>
-  :root {
-    --bg: #0f0f12;
-    --panel: #1a1a20;
-    --border: #2a2a33;
-    --text: #e8e8ec;
-    --muted: #9a9aa6;
+  /* ============ Geist-inspired design tokens ============ */
+  :root, [data-theme="dark"] {
+    --bg: #000;
+    --bg-elev: #0a0a0a;
+    --bg-card: #0d0d0d;
+    --bg-sidebar: #050505;
+    --border: #1f1f1f;
+    --border-strong: #2a2a2a;
+    --text: #fafafa;
+    --text-muted: #888;
+    --text-faint: #555;
     --accent: #ff7a45;
-    --accent-hover: #ff9466;
+    --accent-2: #ff9466;
+    --accent-tint: rgba(255,122,69,0.08);
+    --canvas-bg: #fafafa;
+    --grid-color: rgba(255,255,255,0.025);
   }
+  /* ----- Tweakable design vars (sliders in TWEAK panel) ----- */
+  :root {
+    --h1-size: 35px;
+    --body-size: 18px;
+    --letter-spacing: 0.008em;
+    --body-pad-y: 0px;
+    --body-pad-x: 30px;
+    --card-pad: 21px;
+    --card-radius: 17px;
+    --btn-radius: 17px;
+    --grid-gap: 20px;
+    --dot-size: 26px;
+    --blink-speed: 1250ms;
+    --tab-pad-x: 17px;
+    --tab-pad-y: 9px;
+    /* Controls 内部参数 */
+    --ctrl-name-size: 16px;
+    --ctrl-value-size: 14px;
+    --ctrl-col-gap: 3px;
+    --ctrl-row-gap: 5px;
+    --ctrl-name-col: 100px;
+    --ctrl-value-col: 52px;
+    --ctrl-unit-col: 44px;
+    /* 主题相关名字颜色 */
+    --ctrl-name-dark: #d4d4d4;
+    --ctrl-name-light: #333333;
+    /* size-hint 字号 */
+    --hint-size: 13px;
+    --hint-ref-size: 12px;
+    /* preset 行和按钮行之间的间距 */
+    --ctrl-actions-gap: 16px;
+    /* ctrl-check 提示文字（"勾选时..."）左侧 padding —— 让出空间给 checkbox+label，避免重叠 */
+    --ctrl-reminder-padl: 24px;
+
+    /* Sidebar layout */
+    --sidebar-w: 420px;
+    --author-top: 2px;
+    --theme-top: 2px;
+    --cursor-w: 0.32em;
+    --cursor-h: 1.05em;
+    --cursor-baseline: -0.14em;
+    --header-pad-top: 14px;
+    --header-pad-bottom: 10px;
+    --card-canvas-min: 200px;
+    --card-canvas-max: 480px;
+  }
+  /* 根据主题切对应的 name color */
+  :root, [data-theme="dark"] {
+    --ctrl-name-color: var(--ctrl-name-dark);
+  }
+  [data-theme="light"] {
+    --ctrl-name-color: var(--ctrl-name-light);
+  }
+  [data-theme="light"] {
+    --bg: #fafafa;
+    --bg-elev: #fff;
+    --bg-card: #fff;
+    --bg-sidebar: #f3f3f3;
+    --border: #e8e8e8;
+    --border-strong: #d4d4d4;
+    --text: #0a0a0a;
+    --text-muted: #666;
+    --text-faint: #aaa;
+    --accent: #f04e1f;
+    --accent-2: #d43d10;
+    --accent-tint: rgba(240,78,31,0.06);
+    --canvas-bg: #fff;
+    --grid-color: rgba(0,0,0,0.045);
+  }
+
   * { box-sizing: border-box; }
+  ::selection { background: var(--accent); color: #fff; }
+
   body {
     margin: 0;
-    padding: 24px;
+    padding: var(--body-pad-y) var(--body-pad-x);
     background: var(--bg);
+    background-image: radial-gradient(circle at 1px 1px, var(--grid-color) 1px, transparent 0);
+    background-size: var(--dot-size) var(--dot-size);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", "PingFang SC", "Helvetica Neue", sans-serif;
+    font-size: var(--body-size);
     line-height: 1.5;
+    letter-spacing: var(--letter-spacing);
+    transition: background-color 0.18s ease, color 0.18s ease;
+    -webkit-font-smoothing: antialiased;
   }
-  .container { max-width: 1300px; margin: 0 auto; }
-  .header-row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 0 0 6px; }
-  h1 { margin: 0; font-size: 24px; }
-  .author-badge {
-    font-size: 13px;
-    color: var(--muted);
-    padding: 3px 10px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: linear-gradient(90deg, rgba(255,122,69,0.15), rgba(255,148,102,0.05));
-  }
-  .author-badge b { color: var(--accent); font-weight: 600; }
-  .sub { color: var(--muted); margin-bottom: 18px; font-size: 14px; }
 
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  /* ============ Header ============ */
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin: 0 0 6px;
+  }
+  h1 {
+    margin: 0;
+    font-size: var(--h1-size);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .cursor-blink {
+    display: inline-block;
+    color: var(--accent);
+    animation: blink var(--blink-speed) step-end infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+  .author-badge {
+    font-size: 11px;
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", monospace;
+    color: var(--text-muted);
+    padding: 4px 9px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    letter-spacing: 0.02em;
+    background: transparent;
+  }
+  .author-badge b { color: var(--text); font-weight: 500; }
+
+  .theme-toggle {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 5px 11px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    font-family: ui-monospace, "SF Mono", monospace;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .theme-toggle:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+    background: var(--bg-elev);
+  }
+
+  .sub {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    font-size: 0.88em;       /* 跟 body 联动 */
+    max-width: 640px;
+  }
+
+  /* ============ Tabs ============ */
   .tabs {
     display: flex;
-    gap: 6px;
+    gap: 0;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 18px;
+    margin-bottom: 20px;
   }
   .tab {
     background: transparent;
-    color: var(--muted);
+    color: var(--text-muted);
     border: none;
-    padding: 10px 18px;
-    font-size: 14px;
+    border-radius: 0;               /* 关键：覆盖全局 button { border-radius: var(--btn-radius) } */
+    padding: var(--tab-pad-y) var(--tab-pad-x);
+    font-size: 15px;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
     font-family: inherit;
+    font-weight: 400;
+    transition: color 0.15s ease, border-color 0.15s ease;
+    letter-spacing: -0.01em;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab:hover { color: var(--text); }
+  .tab:focus { outline: none; }
+  .tab:focus-visible {              /* 键盘 tab 切换时才显示焦点，仍然扁平 */
+    outline: none;
+    color: var(--text);
+  }
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+  .tab:hover:not(.active) { color: var(--text); }
 
+  /* ============ Controls — vertical rows + tooltips ============ */
   .controls {
-    background: var(--panel);
+    background: var(--bg-elev);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px;
-    margin-bottom: 20px;
+    border-radius: var(--card-radius);
+    padding: 22px 26px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ctrl-row-gap);
+  }
+  /* Each labeled slider row */
+  .controls label.ctrl {
+    display: grid;
+    grid-template-columns:
+      var(--ctrl-name-col)         /* name */
+      minmax(240px, 380px)         /* slider */
+      56px                          /* value (editable) */
+      var(--ctrl-unit-col)          /* unit (fixed → ? 对齐) */
+      22px                          /* ? */
+      1fr;                          /* trailing empty space */
+    align-items: center;
+    gap: var(--ctrl-col-gap);
+    font-family: ui-monospace, "SF Mono", monospace;
+    color: var(--ctrl-name-color);
+    letter-spacing: 0.01em;
+    min-height: 28px;
+  }
+  .controls label.ctrl .ctrl-name {
+    white-space: nowrap;
+    line-height: 1.3;
+    font-size: var(--ctrl-name-size);
+    color: inherit;
+  }
+  .controls label.ctrl input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+  .controls label.ctrl .value {
+    text-align: right;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--ctrl-value-size);
+    min-width: 0;
+    cursor: text;
+    outline: none;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    font-family: inherit;
+    line-height: 1.2;
+  }
+  .controls label.ctrl .value:hover {
+    border-color: var(--border-strong);
+  }
+  .controls label.ctrl .value:focus {
+    background: var(--accent-tint);
+    border-color: var(--accent);
+  }
+  .controls label.ctrl .ctrl-unit {
+    font-size: calc(var(--ctrl-value-size) * 0.82);
+    color: var(--text-faint);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Checkbox row — same grid as .ctrl for ? alignment */
+  .controls label.ctrl-check {
+    display: grid;
+    grid-template-columns:
+      var(--ctrl-name-col)
+      minmax(240px, 380px)
+      56px
+      var(--ctrl-unit-col)
+      22px
+      1fr;
+    align-items: center;
+    gap: var(--ctrl-col-gap);
+    font-family: ui-monospace, "SF Mono", monospace;
+    color: var(--ctrl-name-color);
+    cursor: pointer;
+    user-select: none;
+    min-height: 28px;
+  }
+  .controls label.ctrl-check .ctrl-name {
+    grid-column: 1;              /* 默认只占 name col */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--ctrl-name-size);
+    color: inherit;
+    white-space: nowrap;
+  }
+  /* 当 ctrl-check 没有 reminder 时让 name 跨满到 ? 之前 */
+  .controls label.ctrl-check:not(:has(.ctrl-reminder)) .ctrl-name {
+    grid-column: 1 / span 4;
+  }
+  .controls input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px; height: 16px;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  /* Disabled ctrl row (e.g., 二值化阈值 when Bayer 抖动 is on) */
+  .controls label.ctrl.ctrl-disabled {
+    opacity: 0.4;
+  }
+  .controls label.ctrl.ctrl-disabled input[type="range"],
+  .controls label.ctrl.ctrl-disabled .value {
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+  .controls label.ctrl.ctrl-disabled .ctrl-info {
+    pointer-events: auto;        /* tooltip 仍可用 */
+    opacity: 1;
+  }
+  /* Reminder text next to Bayer checkbox */
+  .controls label.ctrl-check .ctrl-reminder {
+    font-size: calc(var(--ctrl-name-size) * 0.85);
+    color: var(--text-faint);
+    font-family: ui-monospace, "SF Mono", monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: var(--ctrl-reminder-padl);   /* 给 checkbox+label 让出空间，避免重叠 */
+    grid-column: 2 / 5;          /* 跨 slider/value/unit 列 */
+  }
+  /* Info ? icon with tooltip */
+  .ctrl-info {
+    width: 18px; height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    color: var(--text-faint);
+    cursor: help;
+    position: relative;
+    background: transparent;
+    flex-shrink: 0;
+    font-family: ui-monospace, monospace;
+    line-height: 1;
+  }
+  .ctrl-info:hover { color: var(--text); border-color: var(--text-muted); }
+  /* Tooltip 浮在 ? 右边 */
+  .ctrl-info[data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--text);
+    color: var(--bg);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    width: 280px;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.55;
+    z-index: 100;
+    font-family: ui-sans-serif, -apple-system, sans-serif;
+    letter-spacing: 0;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .ctrl-info[data-tip]:hover::before {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 2px;
+    border: 6px solid transparent;
+    border-right-color: var(--text);
+    z-index: 100;
+  }
+  /* Preset chips sub-row — 跟 slider 起始位置对齐 */
+  .ctrl-presets {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 6px;
+    margin-left: calc(var(--ctrl-name-col) + var(--ctrl-col-gap));
+    margin-top: -2px;
+    margin-bottom: 6px;
+  }
+  /* Action button bar at bottom of controls */
+  .ctrl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: var(--ctrl-actions-gap);
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
     align-items: center;
   }
-  .controls label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-  .controls input[type="range"] { width: 140px; }
-  .controls input[type="file"] { color: var(--muted); font-size: 13px; max-width: 220px; }
-  button {
-    background: var(--accent);
-    color: #1a1a20;
-    border: none;
-    padding: 9px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
+  .ctrl-actions button {
     font-size: 13px;
-    font-family: inherit;
+    padding: 9px 16px;
   }
-  button:hover { background: var(--accent-hover); }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  /* 顶部 align action group（export 按钮 + 子 checkbox） */
+  .ctrl-actions { align-items: flex-start; }
+  .ctrl-actions > button { margin-top: 0; }
+  .action-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  /* 子 checkbox（在 export 按钮正下方，缩进对齐文字） */
+  .ctrl-sub-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: calc(var(--ctrl-name-size) * 0.9);
+    color: var(--ctrl-name-color);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    padding-left: 6px;
+  }
+  .ctrl-sub-check input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 14px; height: 14px;
+    cursor: pointer;
+    margin: 0;
+  }
+  .ctrl-sub-check .ctrl-info { margin-left: 2px; }
+  /* Demo 按钮紧跟在 regen 按钮右边（不推到最右） */
+  .ctrl-actions .demo-btn { /* margin-left: 0 — 自然跟随 */ }
+  .ctrl-actions .ctrl-info-text {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-faint);
+    font-family: ui-monospace, monospace;
+  }
+
+  /* ============ Buttons ============ */
+  button {
+    background: var(--text);
+    color: var(--bg);
+    border: 1px solid var(--text);
+    padding: 7px 14px;
+    border-radius: var(--btn-radius);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 12px;
+    font-family: inherit;
+    letter-spacing: -0.005em;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
   button.ghost {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text);
   }
-  button.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  button.ghost:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-elev);
+    opacity: 1;
+  }
 
+  /* Accent buttons (primary actions) */
+  #basicGenBtn:not(:disabled),
+  #colorGenBtn:not(:disabled),
+  #htGenBtn:not(:disabled),
+  #basicPrintAllBtn:not(:disabled),
+  #colorPrintAllBtn:not(:disabled),
+  #htPrintAllBtn:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  #basicGenBtn:not(:disabled):hover,
+  #colorGenBtn:not(:disabled):hover,
+  #htGenBtn:not(:disabled):hover,
+  #basicPrintAllBtn:not(:disabled):hover,
+  #colorPrintAllBtn:not(:disabled):hover,
+  #htPrintAllBtn:not(:disabled):hover {
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+    opacity: 1;
+  }
+
+  /* ============ Preset chips ============ */
   .preset-chips {
     display: inline-flex;
     flex-wrap: wrap;
@@ -101,221 +514,1065 @@
   .preset-chip {
     background: transparent;
     border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 3px 9px;
-    border-radius: 12px;
-    font-size: 11px;
+    color: var(--text-muted);
+    padding: 5px 11px;
+    border-radius: 4px;
+    font-size: 12px;
     cursor: pointer;
-    font-family: inherit;
+    font-family: ui-monospace, "SF Mono", monospace;
     white-space: nowrap;
+    transition: all 0.15s ease;
+    letter-spacing: 0.02em;
   }
-  .preset-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .preset-chip:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
   .preset-chip.active {
     border-color: var(--accent);
     color: var(--accent);
-    background: rgba(255,122,69,0.12);
+    background: var(--accent-tint);
   }
 
+  /* ============ Hints ============ */
   .size-hint-row {
-    background: var(--panel);
+    background: var(--bg-elev);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 14px;
-    margin-bottom: 16px;
-    font-size: 12px;
-    color: var(--muted);
+    border-radius: var(--card-radius);     /* 跟卡片圆角联动 */
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    font-size: var(--hint-size);
+    color: var(--text-muted);
     line-height: 1.7;
     display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
+    flex-direction: column;
+    gap: 4px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    letter-spacing: 0.01em;
   }
-  .size-hint-row b { color: var(--accent); font-weight: 600; }
-  .size-hint-row .ref { color: #666; font-size: 11px; margin-left: 8px; }
-
-  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
-  @media (max-width: 900px) {
-    .grid-2 { grid-template-columns: 1fr; }
-    .grid-3 { grid-template-columns: 1fr; }
-  }
-
-  /* ---- Mobile (≤ 640px) ---- */
-  @media (max-width: 640px) {
-    body { padding: 12px; }
-    h1 { font-size: 18px; line-height: 1.3; }
-    .header-row { gap: 8px; }
-    .author-badge { font-size: 11px; padding: 2px 8px; }
-    .sub { font-size: 12px; margin-bottom: 12px; }
-
-    /* Tabs: 横向滚动，避免挤压 */
-    .tabs {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      flex-wrap: nowrap;
-      scrollbar-width: thin;
-    }
-    .tab {
-      padding: 10px 12px;
-      font-size: 13px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    /* Controls: 改为竖直堆叠，滑条占满宽度 */
-    .controls {
-      padding: 12px;
-      gap: 10px;
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .controls label {
-      width: 100%;
-      flex-direction: row;
-      flex-wrap: wrap;
-      font-size: 12px;
-      gap: 6px;
-    }
-    .controls input[type="range"] {
-      width: 100%;
-      flex: 1 1 100%;
-    }
-    .controls input[type="file"] {
-      max-width: 100%;
-      flex: 1 1 auto;
-    }
-    .controls button {
-      width: 100%;
-      padding: 12px 14px;
-      font-size: 14px;
-    }
-
-    /* Card: 缩内边距 */
-    .card { padding: 10px; }
-    .card h3 { font-size: 13px; }
-    .card .desc { font-size: 11px; }
-
-    /* Info / banner: 字号 */
-    .info { padding: 12px 14px; font-size: 12px; }
-
-    /* 让 canvas 在容器内尽量填充，避免预览框小 */
-    .canvas-wrap canvas { width: 100%; height: auto; }
+  .size-hint-row b { color: var(--text); font-weight: 500; }
+  .size-hint-row .ref {
+    color: var(--text-faint);
+    font-size: var(--hint-ref-size);
+    margin-top: 4px;
   }
 
-  /* ---- Very narrow (≤ 380px) ---- */
-  @media (max-width: 380px) {
-    body { padding: 8px; }
-    h1 { font-size: 16px; }
-    .tab { padding: 8px 10px; font-size: 12px; }
-  }
+  /* ============ Grids ============ */
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--grid-gap); }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); margin-bottom: var(--grid-gap); }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--grid-gap); }
 
+  /* ============ Cards ============ */
   .card {
-    background: var(--panel);
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: var(--card-radius);
+    padding: var(--card-pad);
+    transition: border-color 0.15s ease;
   }
-  .card h3 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
-  .card .desc { color: var(--muted); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
+  .card:hover { border-color: var(--border-strong); }
+  .card h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .card .desc {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 10px;
+    min-height: 16px;
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+
+  /* ============ Card head: title + inline file upload ============ */
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 6px;
+  }
+  .card-head h3 { margin: 0; }
+  .file-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    white-space: nowrap;
+    background: var(--bg);
+    transition: border-color 0.15s, color 0.15s;
+    font-family: ui-monospace, "SF Mono", monospace;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-mini:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .file-mini.has-file {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .file-mini input[type="file"] {
+    display: none;
+  }
+
+  /* ============ Canvas ============ */
   .canvas-wrap {
-    background: #fff;
-    border-radius: 6px;
+    background: var(--canvas-bg);
+    border-radius: 4px;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     aspect-ratio: 1;
     position: relative;
+    border: 1px solid var(--border);
+  }
+  /* basic + CMYK 用 grid-2，画布不强制方形——按图片本身比例显示 */
+  .grid-2 .canvas-wrap {
+    aspect-ratio: auto;
+    min-height: var(--card-canvas-min);
+    max-height: var(--card-canvas-max);
+  }
+  /* 3-shares 用 grid-3，秘密图和叠加保持方形 */
+  .grid-3 .canvas-wrap {
+    aspect-ratio: 1;
+    min-height: 0;
+    max-height: none;
   }
   canvas { display: block; max-width: 100%; max-height: 100%; image-rendering: pixelated; }
-  .card .actions { margin-top: 10px; display: flex; gap: 8px; }
+  .card .actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
   .card .upload-row { margin-bottom: 10px; }
   .card .upload-row input[type="file"] {
-    color: var(--muted);
-    font-size: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
     width: 100%;
   }
 
+  /* ============ Info section ============ */
   .info {
-    background: var(--panel);
+    background: var(--bg-elev);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
+    border-left: 2px solid var(--accent);
     border-radius: 6px;
     padding: 14px 18px;
     margin-top: 20px;
-    font-size: 13px;
-    color: var(--muted);
+    font-size: 0.85em;       /* 跟 body 联动 */
+    color: var(--text-muted);
+    line-height: 1.65;
   }
-  .info b { color: var(--text); }
-  .info code { background: #000; padding: 1px 5px; border-radius: 3px; color: var(--accent); font-size: 12px; }
-  .empty { color: #555; font-size: 12px; padding: 30px; text-align: center; }
-  .value { color: var(--accent); font-variant-numeric: tabular-nums; min-width: 32px; display: inline-block; text-align: right; }
+  .info b { color: var(--text); font-weight: 500; }
+  .info code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--accent);
+    font-size: 11px;
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+  .info ul { margin-block: 6px; }
+
+  .empty {
+    color: var(--text-faint);
+    font-size: 11px;
+    padding: 24px;
+    text-align: center;
+    font-family: ui-monospace, "SF Mono", monospace;
+    letter-spacing: 0.02em;
+  }
+  .value {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    min-width: 28px;
+    display: inline-block;
+    text-align: right;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px;
+  }
 
   .panel-content { display: none; }
   .panel-content.active { display: block; }
 
+  /* Pair label / mono tag */
   .pair-label {
     display: inline-block;
-    background: #2a2a33;
+    background: transparent;
     color: var(--accent);
-    padding: 2px 7px;
+    padding: 2px 6px;
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    margin-right: 6px;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+  }
+
+  /* Footer status line */
+  .status-line {
+    margin-top: 32px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .status-line .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* ============ Layout-edit mode (drag-reorder main .controls items) ============ */
+  body.layout-edit .controls {
+    outline: 2px dashed var(--accent);
+    outline-offset: 2px;
+  }
+  body.layout-edit .controls > * {
+    outline: 1px dashed var(--text-muted);
+    outline-offset: 2px;
+    cursor: grab;
+    user-select: none;
     border-radius: 4px;
+  }
+  body.layout-edit .controls > *:hover {
+    outline-color: var(--accent);
+    background: var(--accent-tint);
+  }
+  body.layout-edit .controls input[type=range],
+  body.layout-edit .controls button,
+  body.layout-edit .controls input[type=file],
+  body.layout-edit .controls input[type=color],
+  body.layout-edit .controls input[type=checkbox],
+  body.layout-edit .preset-chips,
+  body.layout-edit .preset-chip {
+    pointer-events: none;
+  }
+  body.layout-edit .controls > *.le-dragging {
+    opacity: 0.35;
+  }
+  body.layout-edit .controls > *.le-drop-before {
+    box-shadow: -3px 0 0 var(--accent);
+  }
+  body.layout-edit .controls > *.le-drop-after {
+    box-shadow: 3px 0 0 var(--accent);
+  }
+  body.layout-edit .le-banner {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
     font-size: 11px;
     font-family: ui-monospace, monospace;
-    margin-right: 6px;
+    letter-spacing: 0.1em;
+    z-index: 1001;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  body:not(.layout-edit) .le-banner { display: none; }
+
+  /* ============ Tweak panel (dev UI iteration) ============ */
+  .tweak-toggle-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--text);
+    color: var(--bg);
+    padding: 8px 12px;
+    border: 1px solid var(--text);
+    border-radius: 20px;
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    cursor: pointer;
+    z-index: 998;
+    letter-spacing: 0.1em;
+    transition: opacity 0.15s;
+  }
+  .tweak-toggle-btn:hover { opacity: 0.85; }
+
+  /* ============ Text-edit mode ============ */
+  .text-edit-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 110px;             /* 放在 TWEAK 按钮左边 */
+    background: var(--bg-elev);
+    color: var(--text);
+    padding: 8px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    font-size: 10px;
+    font-family: ui-monospace, monospace;
+    cursor: pointer;
+    z-index: 998;
+    letter-spacing: 0.1em;
+  }
+  .text-edit-btn:hover { border-color: var(--text-muted); }
+  .text-edit-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  /* 编辑模式下：让所有 [data-edit-key] 元素可点击编辑 */
+  body.text-edit-mode [data-edit-key] {
+    outline: 1px dashed var(--accent);
+    outline-offset: 2px;
+    cursor: text;
+    transition: outline-color 0.15s;
+  }
+  body.text-edit-mode [data-edit-key]:hover {
+    outline-color: var(--accent-2, var(--accent));
+    outline-style: solid;
+    background: var(--accent-tint);
+  }
+  body.text-edit-mode [data-edit-key]:focus {
+    outline: 2px solid var(--accent) !important;
+    background: var(--accent-tint);
+  }
+  body.text-edit-mode .file-mini { pointer-events: none; }   /* 编辑模式下别误触发文件选择 */
+  body.text-edit-mode input[type="range"],
+  body.text-edit-mode input[type="checkbox"],
+  body.text-edit-mode .preset-chip,
+  body.text-edit-mode .tab {
+    pointer-events: none;
+  }
+  /* 但是 tab、preset-chip 还是要能编辑文字，让 contenteditable 接收事件 */
+  body.text-edit-mode [data-edit-key].preset-chip,
+  body.text-edit-mode [data-edit-key].tab {
+    pointer-events: auto;
+  }
+
+  /* Text-edit panel */
+  .te-panel {
+    position: fixed;
+    bottom: 56px;
+    right: 110px;
+    width: 280px;
+    z-index: 999;
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.14);
+    padding: 12px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    display: none;
+  }
+  .te-panel.show { display: block; }
+  .te-panel h4 {
+    margin: 0 0 8px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .te-panel .te-hint {
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .te-panel button {
+    width: 100%;
+    margin-bottom: 6px;
+    font-size: 11px;
+    padding: 7px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .te-panel button:hover { border-color: var(--text-muted); }
+  .te-snapshot {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    color: var(--text-muted);
+    margin-top: 6px;
+    display: none;
+  }
+  .te-snapshot.show { display: block; }
+
+  .tweak-panel {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 260px;
+    min-width: 220px;
+    min-height: 200px;
+    max-width: 480px;
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    resize: both;            /* 可拖角拉伸 */
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 11px;
+    z-index: 999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  [data-theme="light"] .tweak-panel { box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .tweak-panel.hidden { display: none; }
+  .tweak-panel .tp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 10px;
+    color: var(--text);
+    letter-spacing: 0.1em;
+    cursor: move;            /* 拖拽 handle */
+    user-select: none;
+    padding: 4px 6px;
+    margin: -6px -6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tweak-panel .tp-header::before {
+    content: "⠿ ";
+    color: var(--text-faint);
+  }
+  .tweak-panel .tp-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    font-family: inherit;
+  }
+  .tweak-panel .tp-close:hover { color: var(--text); border-color: var(--border-strong); }
+  .tweak-panel h4 {
+    font-size: 9px;
+    color: var(--text-faint);
+    letter-spacing: 0.16em;
+    margin: 14px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .tweak-panel h4:first-of-type { margin-top: 0; }
+  .tp-row {
+    display: grid;
+    grid-template-columns: 86px 1fr 38px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 10px;
+  }
+  .tp-row .tp-label { color: var(--text-muted); }
+  .tp-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+  .tp-row input[type="color"] {
+    width: 100%;
+    height: 22px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    background: transparent;
+  }
+  .tp-row output {
+    text-align: right;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .tweak-panel .tp-footer {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tweak-panel .tp-footer button {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    font-family: inherit;
+    border-radius: 4px;
+  }
+  .tweak-panel .tp-footer button:hover {
+    border-color: var(--text-muted);
+    background: var(--bg-card);
+  }
+  .tweak-panel .tp-snapshot {
+    font-family: inherit;
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-top: 6px;
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow-y: auto;
+    line-height: 1.5;
+    display: none;
+  }
+
+  /* ============ Mobile ============ */
+  @media (max-width: 1100px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 900px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .grid-4 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    body { padding: 16px 12px; }
+    h1 { font-size: 18px; }
+    .header-row { gap: 8px; }
+    .author-badge { font-size: 10px; padding: 3px 7px; }
+    .theme-toggle { font-size: 10px; padding: 4px 8px; }
+    .sub { font-size: 12px; margin-bottom: 16px; }
+    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: thin; }
+    .tab { padding: 10px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+    .controls { padding: 12px; gap: 8px; max-width: 100%; }
+    .controls label.ctrl {
+      grid-template-columns: 1fr 38px 22px 18px;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .controls label.ctrl .ctrl-name {
+      grid-column: 1 / -1;
+      margin-bottom: 2px;
+    }
+    .controls label.ctrl input[type="range"] { grid-column: 1; }
+    .controls label.ctrl .value { grid-column: 2; }
+    .controls label.ctrl .ctrl-unit { grid-column: 3; }
+    .controls label.ctrl .ctrl-info { grid-column: 4; }
+    .ctrl-presets { margin-left: 0; }
+    .ctrl-actions button { flex: 1 1 auto; padding: 8px 12px; font-size: 11px; }
+    .card { padding: 10px; }
+    .card h3 { font-size: 12px; }
+    .card .desc { font-size: 10px; }
+    .info { padding: 12px 14px; font-size: 11px; }
+    .canvas-wrap canvas { width: 100%; height: auto; }
+  }
+  @media (max-width: 380px) {
+    body { padding: 12px 8px; }
+    h1 { font-size: 16px; }
+    .tab { padding: 8px 10px; font-size: 11px; }
+  }
+  @media (max-width: 640px) {
+    .tweak-panel { width: calc(100vw - 16px); right: 8px; bottom: 8px; }
+    .tweak-toggle-btn { bottom: 12px; right: 12px; }
+  }
+
+  /* ============================================================
+     SIDEBAR LAYOUT — sticky topbar + left sidebar + right main
+     ============================================================ */
+  body {
+    padding: 0 !important;
+    background-image: none;            /* main 区单独画背景 */
+    overflow-x: hidden;                /* 防止 position:fixed 浮窗触发页面水平滚动 */
+  }
+  .container { max-width: none; margin: 0; }
+
+  /* Sticky topbar (header + tabs together) */
+  .topbar-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: saturate(160%) blur(10px);
+    -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header {
+    padding: var(--header-pad-top) var(--body-pad-x) var(--header-pad-bottom);
+  }
+  .topbar-sticky .header-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin: 0;
+  }
+  .topbar-sticky .author-badge {
+    position: relative;
+    top: var(--author-top);
+  }
+  .topbar-sticky .theme-toggle {
+    position: relative;
+    top: var(--theme-top);
+  }
+  .topbar-sticky .cursor-blink {
+    display: inline-block;
+    width: var(--cursor-w);
+    height: var(--cursor-h);
+    background: var(--accent);
+    margin-left: 4px;
+    vertical-align: var(--cursor-baseline);
+    animation: blink var(--blink-speed) step-end infinite;
+    border-radius: 1px;
+  }
+  .topbar-sticky .tabs {
+    margin: 0;
+    padding: 0 var(--body-pad-x);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+
+  /* App grid: sidebar + main */
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    align-items: start;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .sidebar-panel {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  .sidebar-panel.active { display: flex; }
+  .sidebar-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;        /* 浮窗 fixed 飞到外面时不要触发水平滚动条 */
+    padding: 18px 20px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+  /* sidebar 内的 .controls：去掉卡片包装 */
+  .sidebar .controls {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+  }
+  /* sidebar 内 ctrl 行重排：name | slider 1fr | value | unit | ? */
+  .sidebar .controls label.ctrl,
+  .sidebar .controls label.ctrl-check {
+    grid-template-columns:
+      var(--ctrl-name-col)
+      1fr
+      var(--ctrl-value-col)
+      var(--ctrl-unit-col)
+      22px;
+  }
+  /* value 左对齐 */
+  .sidebar .controls label.ctrl .value { text-align: left; }
+  /* preset 跟 slider 起始对齐 */
+  .sidebar .ctrl-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 6px 0 0 calc(var(--ctrl-name-col) + var(--ctrl-col-gap));
+  }
+  .sidebar .preset-chip {
+    font-size: 12px;
+    padding: 7px 6px;
+    text-align: center;
+    background: var(--bg-elev);
+    position: relative;
+  }
+  .sidebar .preset-chip:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+  }
+
+  /* Sidebar hints (below presets) */
+  .sidebar-hints {
+    margin: 12px 0 0;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sidebar-hint {
+    font-size: var(--hint-size);
+    color: var(--text-muted);
+    line-height: 1.5;
+    font-family: ui-monospace, "SF Mono", monospace;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .sidebar-hint .hint-text { flex: 1; min-width: 0; }
+  .sidebar-hint .ctrl-info {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .sidebar-hint b { color: var(--text); font-weight: 500; }
+  .sidebar-hint.ref { color: var(--text-faint); font-size: var(--hint-ref-size); }
+
+  /* Sidebar bottom actions (sticky inside sidebar) */
+  .sidebar-actions {
+    border-top: 1px solid var(--border);
+    background: var(--bg-sidebar);
+    padding: 14px 20px 16px;
+  }
+  /* 重排：先 [regen | demo]，再 export 全宽，再 sub-check */
+  .sidebar-actions .ctrl-actions {
+    padding-top: 0;
+    margin-top: 0;
+    border-top: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+  /* 第一行：regen | demo（regen 是直接 button 不带 demo-btn class） */
+  .sidebar-actions .ctrl-actions > button:not(.demo-btn) {
+    order: 1;
+    grid-column: 1;
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+    padding: 11px 12px;
+  }
+  .sidebar-actions .ctrl-actions > .demo-btn {
+    order: 2;
+    grid-column: 2;
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+    padding: 11px 12px;
+  }
+  /* 第二行+第三行：action-group（export + sub-check）全宽 */
+  .sidebar-actions .ctrl-actions > .action-group {
+    order: 3;
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+  }
+  .sidebar-actions .ctrl-actions > .action-group > button {
+    width: 100%;
+    font-size: 14px;
+    padding: 13px 16px;
+    font-weight: 500;
+  }
+  /* ctrl-info-text (htParamInfo) — 暂时隐藏，K_max 信息已搬到 sidebar-hints */
+  .sidebar-actions .ctrl-actions > .ctrl-info-text {
+    display: none;
+  }
+
+  /* Main */
+  .main {
+    padding: 22px var(--body-pad-x) 60px;
+    min-width: 0;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 1px 1px, var(--grid-color) 1px, transparent 0);
+    background-size: var(--dot-size) var(--dot-size);
+  }
+  .main-panel { display: none; }
+  .main-panel.active { display: block; }
+
+  /* canvas-wrap 用 CSS vars 控制最小最大高 */
+  .canvas-wrap {
+    min-height: var(--card-canvas-min);
+    max-height: var(--card-canvas-max);
+  }
+
+  /* CMYK Multiply 警告 banner — light 主题白底黑字，dark 主题深底浅字，统一左侧橙色色条 */
+  .warning-banner {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .warning-banner b {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ============ Floating tooltip ============ */
+  .ctrl-info[data-tip] { cursor: help; }
+  .float-tip {
+    position: fixed;
+    z-index: 99999;
+    background: var(--text);
+    color: var(--bg);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 360px;
+    width: max-content;
+    text-align: left;
+    letter-spacing: 0;
+    font-family: ui-sans-serif, -apple-system, sans-serif;
+    font-weight: 400;
+    white-space: pre-wrap;             /* 让 \n 真的换行（开/关 段落分隔） */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  /* "开：..." / "关：..." 段落标记 — accent 色加粗 */
+  .float-tip strong {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  /* Markdown 风的 **bold** 高亮 — 白色加粗（提示重点词，不抢段落标题） */
+  .float-tip b {
+    color: #fff;
+    font-weight: 600;
+  }
+  .float-tip.visible { opacity: 1; }
+  .float-tip::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 0; height: 0;
+    border: 6px solid transparent;
+    transform: translateY(-50%);
+  }
+  .float-tip.right::before {
+    right: 100%;
+    border-right-color: var(--text);
+  }
+  .float-tip.left::before {
+    left: 100%;
+    border-left-color: var(--text);
+  }
+  .float-tip.below::before {
+    bottom: 100%;
+    top: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-bottom-color: var(--text);
+  }
+  .float-tip.compact {
+    font-size: 11px;
+    padding: 5px 9px;
+    max-width: none;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* override inline file picker → styled file-mini button */
+  .file-mini {
+    font-size: 12px;
+    padding: 6px 12px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: var(--accent);
+    background: var(--accent-tint);
+    font-family: ui-monospace, monospace;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .file-mini:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Card head: title + inline file picker */
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 6px;
+  }
+  .card-head h3 { margin: 0; }
+
+  /* ============ Sidebar responsive ============
+     策略：
+     - 宽屏（> 1200px）：grid-2 用 2 列，grid-3 用 3 列
+     - 主区放不下（≤ 1200px）：直接整体塌成单列，避免 2 列出现孤儿卡或挤压
+     - 真正窄（< 720px）：sidebar 也挪到顶部
+  */
+  /* 3-shares 卡片高度封顶，避免单列时 aspect-ratio:1 把卡片撑得太高 */
+  .grid-3 .canvas-wrap { max-height: 280px; }
+
+  @media (max-width: 1200px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-scroll { max-height: 60vh; }
   }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="header-row">
-    <h1>视觉密码学演示 / Visual Cryptography</h1>
-    <span class="author-badge">作者：<b>Suanovil (Sue)</b></span>
-  </div>
-  <div class="sub">用纯物理叠加（黑覆盖白）就能"解密"图像——无需任何计算。</div>
 
+<!-- ============== STICKY TOPBAR: header + tabs ============== -->
+<div class="topbar-sticky">
+  <div class="page-header">
+    <div class="header-row">
+      <h1>视觉密码学演示 / Visual Cryptography<span class="cursor-blink"></span></h1>
+      <span class="author-badge">BY <b>SUANOVIL · SUE</b></span>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">◑ DARK</button>
+    </div>
+  </div>
   <div class="tabs">
-    <button class="tab active" data-tab="basic">2-out-of-2（基础版）</button>
-    <button class="tab" data-tab="halftone">3-shares / 3-secrets（可打印）</button>
-    <button class="tab" data-tab="color">彩色 CMYK（beta）</button>
+    <button class="tab active" data-tab="basic">2-out-of-2</button>
+    <button class="tab" data-tab="halftone">3-shares / 3-secrets</button>
+    <button class="tab" data-tab="color">彩色 CMYK（2-out-of-2）</button>
   </div>
+</div>
 
-  <!-- ============== TAB 1: BASIC 2-out-of-2 ============== -->
+<!-- ============== APP: sidebar | main ============== -->
+<div class="app">
+  <aside class="sidebar"></aside>
+  <main class="main">
+
+  <!-- ============== TAB 1: BASIC 2-out-of-2 (panels relocated by JS) ============== -->
   <div class="panel-content active" id="panel-basic">
     <div class="controls">
-      <label>上传图片：<input type="file" id="basicFile" accept="image/*"></label>
-      <label>分辨率：<input type="range" id="basicRes" min="40" max="2000" value="80" step="20"> <span class="value" id="basicResVal">80</span> px</label>
-      <label>二值化阈值：<input type="range" id="basicThreshold" min="0" max="255" value="128"> <span class="value" id="basicThresholdVal">128</span></label>
-      <label>放大倍数：<input type="range" id="basicScale" min="1" max="4" value="2"> <span class="value" id="basicScaleVal">2</span></label>
-      <label>打印尺寸（仅导出用）：<input type="range" id="basicPrintMm" min="60" max="320" value="148" step="2"> <span class="value" id="basicPrintMmVal">148</span> mm
-        <span class="preset-chips">
-          <button class="preset-chip" data-basic-preset="90">名片 90</button>
-          <button class="preset-chip" data-basic-preset="148">明信片 148</button>
-          <button class="preset-chip" data-basic-preset="210">色卡 210</button>
-          <button class="preset-chip" data-basic-preset="310">文件夹 310</button>
-        </span>
+      <label class="ctrl">
+        <span class="ctrl-name">分辨率</span>
+        <input type="range" id="basicRes" min="40" max="2000" value="80" step="20">
+        <span class="value" id="basicResVal" contenteditable="true" inputmode="numeric" data-slider="basicRes" spellcheck="false">80</span>
+        <span class="ctrl-unit">px</span>
+        <span class="ctrl-info" data-tip="原图二值化后的边长像素数。越大→网点越细密，share 输出也越大。仅影响预览，不影响打印导出。">?</span>
       </label>
-      <label><input type="checkbox" id="basicRegMark"> 加四角对位标记 +</label>
-      <button id="basicGenBtn" disabled>生成 Shares</button>
-      <button id="basicPrintAllBtn" disabled>导出 2 张打印 PNG（300 DPI 透明）</button>
-      <button class="ghost" id="basicDemoBtn">示例：密 SECRET</button>
-      <button class="ghost" id="basicDemoBtn2">示例：心形 ♥</button>
-      <button class="ghost" id="basicDemoBtn3">示例：QR 风格图标</button>
+      <label class="ctrl-check" id="basicDitherRow">
+        <span class="ctrl-name">
+          <input type="checkbox" id="basicDither">
+          FS 抖动
+        </span>
+        <span class="ctrl-reminder">灰度图/照片建议开</span>
+        <span class="ctrl-info" data-tip="开：用 Floyd-Steinberg 误差扩散做半色调，照片可以保留中间灰（用黑白点密度模拟）。关：简单阈值切分，logo/文字最锐利。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">二值化阈值</span>
+        <input type="range" id="basicThreshold" min="0" max="255" value="128">
+        <span class="value" id="basicThresholdVal" contenteditable="true" inputmode="numeric" data-slider="basicThreshold" spellcheck="false">128</span>
+        <span class="ctrl-unit">0-255</span>
+        <span class="ctrl-info" data-tip="灰度阈值 0-255。FS 关 → 硬切（低于变黑/高于变白）。FS 开 → 色调偏移（低 → 整体更黑/上墨更多，高 → 更白）。中性 128。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">网点粗细</span>
+        <input type="range" id="basicScale" min="1" max="4" value="2">
+        <span class="value" id="basicScaleVal" contenteditable="true" inputmode="decimal" data-slider="basicScale" data-display="mm" spellcheck="false">0.17</span>
+        <span class="ctrl-unit">mm</span>
+        <span class="ctrl-info" data-tip="每个子像素在 300 DPI 打印下的物理大小。越大→网点越粗（肉眼可见，方便对齐）；越小→越细（接近印刷品质感但难叠加）。share 最终尺寸 = 分辨率 × 2 × 网点粗细对应像素数。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">打印尺寸</span>
+        <input type="range" id="basicPrintMm" min="60" max="320" value="148" step="2">
+        <span class="value" id="basicPrintMmVal" contenteditable="true" inputmode="numeric" data-slider="basicPrintMm" spellcheck="false">148</span>
+        <span class="ctrl-unit">mm</span>
+        <span class="ctrl-info" data-tip="导出长边的 mm 物理尺寸，300 DPI 重算。⚠️ 这是图片**长边**对应 mm 数，比例由你上传图本身决定，工具不会替你改比例。要做明信片（105×148mm）就上传 105:148 比例的图。不影响预览。">?</span>
+      </label>
+      <div class="ctrl-presets">
+        <button class="preset-chip" data-basic-preset="90" data-mm="90">名片</button>
+        <button class="preset-chip" data-basic-preset="148" data-mm="148">明信片</button>
+        <button class="preset-chip" data-basic-preset="210" data-mm="210">色卡</button>
+        <button class="preset-chip" data-basic-preset="310" data-mm="310">文件夹</button>
+      </div>
+      <div class="ctrl-actions">
+        <div class="action-group">
+          <button id="basicPrintAllBtn" disabled>导出 2 张打印 PNG（300 DPI 透明）</button>
+          <label class="ctrl-sub-check">
+            <input type="checkbox" id="basicRegMark">
+            加四角对位标记 +
+            <span class="ctrl-info" data-tip="在导出的 PNG 四角加 + 字标记，物理叠加透明胶片时用来对齐。">?</span>
+          </label>
+        </div>
+        <button id="basicGenBtn" disabled>重新生成 Shares</button>
+        <button class="ghost demo-btn" id="basicDemoBtn2">示例：♥</button>
+      </div>
     </div>
 
     <div class="size-hint-row" id="basicSizeHint">
-      <span>📐 预览 share：<b id="basicShareSizeText">—</b> ≈ <b id="basicPrintSizeText">—</b> @ 300 DPI</span>
-      <span>🖨️ 点"导出打印"会按设定的 <b id="basicExportMmText">148mm</b> 长边重新以 300 DPI 渲染</span>
-      <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
+      <span data-tip="按 300 DPI 渲染算的物理 mm。这是预览展示的等效尺寸，打印导出会按你设定的「打印尺寸」长边重新算。">📐 预览尺寸：<b id="basicShareSizeText">—</b> ≈ <b id="basicPrintSizeText">—</b></span>
+      <span data-tip="300 DPI 重算。短边按上传图本身的比例同步缩放，不强制方形。">🖨️ 导出将按 <b id="basicExportMmText">148mm</b>（最长边长）重算</span>
+      <span class="ref" data-tip="ISO 216 国际纸张尺寸（mm）。每往上一级长边 ×√2，对折后等比缩小。">参考：A6=105×148 · A5=148×210 · A4=210×297</span>
     </div>
 
     <div class="grid-2">
       <div class="card">
-        <h3>原图（二值化）</h3>
+        <div class="card-head">
+          <h3>原图（二值化）</h3>
+          <label class="file-mini" data-file-for="basicFile">
+            <input type="file" id="basicFile" accept="image/*">
+            <span class="file-mini-label">📁 选图</span>
+          </label>
+        </div>
         <div class="desc">黑色=要隐藏的内容</div>
         <div class="canvas-wrap"><canvas id="basicOrig"></canvas><div class="empty" id="basicOrigEmpty">先上传图片</div></div>
       </div>
       <div class="card">
-        <h3>叠加结果 S1 + S2</h3>
+        <h3>叠加结果预览 S1 + S2</h3>
         <div class="desc">两张 share 物理叠加 → 可见原图</div>
         <div class="canvas-wrap"><canvas id="basicOverlay"></canvas><div class="empty" id="basicOverlayEmpty">生成后显示</div></div>
       </div>
@@ -354,57 +1611,106 @@
   <!-- ============== TAB 2: COLOR CMYK ============== -->
   <div class="panel-content" id="panel-color">
     <div class="controls">
-      <label>上传彩色图：<input type="file" id="colorFile" accept="image/*"></label>
-      <label><input type="checkbox" id="colorDither" checked> Bayer 抖动（保留中间色调）</label>
-      <label>阈值（关闭抖动时）：<input type="range" id="colorThreshold" min="1" max="254" value="128"> <span class="value" id="colorThresholdVal">128</span></label>
-      <label>秘密分辨率：<input type="range" id="colorRes" min="40" max="2000" value="120" step="20"> <span class="value" id="colorResVal">120</span> px</label>
-      <label>曝光（浅 ←→ 浓）：<input type="range" id="colorExposure" min="-50" max="50" value="0" step="5"> <span class="value" id="colorExposureVal">0</span></label>
-      <label>放大倍数：<input type="range" id="colorScale" min="1" max="3" value="2"> <span class="value" id="colorScaleVal">2</span></label>
-      <label>打印尺寸：<input type="range" id="colorPrintMm" min="60" max="320" value="148" step="2"> <span class="value" id="colorPrintMmVal">148</span> mm
-        <span class="preset-chips">
-          <button class="preset-chip" data-color-preset="90">名片 90</button>
-          <button class="preset-chip" data-color-preset="148">明信片 148</button>
-          <button class="preset-chip" data-color-preset="210">色卡 210</button>
-          <button class="preset-chip" data-color-preset="310">文件夹 310</button>
-        </span>
+      <label class="ctrl">
+        <span class="ctrl-name">分辨率</span>
+        <input type="range" id="colorRes" min="40" max="2000" value="120" step="20">
+        <span class="value" id="colorResVal" contenteditable="true" inputmode="numeric" data-slider="colorRes" spellcheck="false">120</span>
+        <span class="ctrl-unit">px</span>
+        <span class="ctrl-info" data-tip="彩色图缩放到的边长像素数。越大颜色细节越丰富，但 share 也越大。">?</span>
       </label>
-      <label><input type="checkbox" id="colorRegMark"> 加四角对位标记 +</label>
-      <button id="colorGenBtn" disabled>生成彩色 Shares</button>
-      <button id="colorPrintAllBtn" disabled>导出 2 张打印 PNG（300 DPI 透明）</button>
-      <button class="ghost" id="colorDemoBtn">用示例图（RGB 字）</button>
+      <label class="ctrl-check" id="colorDitherRow">
+        <span class="ctrl-name">
+          <input type="checkbox" id="colorDither" checked>
+          Bayer 抖动
+        </span>
+        <span class="ctrl-reminder">勾选时下方「二值化阈值」不生效</span>
+        <span class="ctrl-info" data-tip="开：用 4×4 Bayer 抖动矩阵半色调，保留中间灰度，效果更细腻。关：硬阈值切分，对比强但失中间色。">?</span>
+      </label>
+      <label class="ctrl" id="colorThresholdRow">
+        <span class="ctrl-name">二值化阈值</span>
+        <input type="range" id="colorThreshold" min="1" max="254" value="128">
+        <span class="value" id="colorThresholdVal" contenteditable="true" inputmode="numeric" data-slider="colorThreshold" spellcheck="false">128</span>
+        <span class="ctrl-unit">0-255</span>
+        <span class="ctrl-info" data-tip="仅在 Bayer 抖动关闭时生效。CMYK 通道值高于此阈值就上墨。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">曝光</span>
+        <input type="range" id="colorExposure" min="-50" max="50" value="0" step="5">
+        <span class="value" id="colorExposureVal" contenteditable="true" inputmode="numeric" data-slider="colorExposure" spellcheck="false">0</span>
+        <span class="ctrl-unit">±</span>
+        <span class="ctrl-info" data-tip="对 CMYK 4 通道整体加/减偏移。正数→油墨更浓，负数→更浅。Bayer 和阈值模式都生效。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">网点粗细</span>
+        <input type="range" id="colorScale" min="1" max="3" value="2">
+        <span class="value" id="colorScaleVal" contenteditable="true" inputmode="decimal" data-slider="colorScale" data-display="mm" spellcheck="false">0.17</span>
+        <span class="ctrl-unit">mm</span>
+        <span class="ctrl-info" data-tip="每个子像素在 300 DPI 打印下的物理大小。越大→网点越粗。share 最终尺寸 = 分辨率 × 2 × 网点粗细对应像素数。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">打印尺寸</span>
+        <input type="range" id="colorPrintMm" min="60" max="320" value="148" step="2">
+        <span class="value" id="colorPrintMmVal" contenteditable="true" inputmode="numeric" data-slider="colorPrintMm" spellcheck="false">148</span>
+        <span class="ctrl-unit">mm</span>
+        <span class="ctrl-info" data-tip="点「导出打印 PNG」时按这个长边以 300 DPI 重算。不影响预览。">?</span>
+      </label>
+      <div class="ctrl-presets">
+        <button class="preset-chip" data-color-preset="90" data-mm="90">名片</button>
+        <button class="preset-chip" data-color-preset="148" data-mm="148">明信片</button>
+        <button class="preset-chip" data-color-preset="210" data-mm="210">色卡</button>
+        <button class="preset-chip" data-color-preset="310" data-mm="310">文件夹</button>
+      </div>
+      <div class="ctrl-actions">
+        <div class="action-group">
+          <button id="colorPrintAllBtn" disabled>导出 2 张打印 PNG（300 DPI 透明）</button>
+          <label class="ctrl-sub-check">
+            <input type="checkbox" id="colorRegMark">
+            加四角对位标记 +
+            <span class="ctrl-info" data-tip="在导出的 PNG 四角加 + 字标记，物理叠加透明胶片时用来对齐。">?</span>
+          </label>
+        </div>
+        <button id="colorGenBtn" disabled>重新生成彩色 Shares</button>
+        <button class="ghost demo-btn" id="colorDemoBtn">用示例图（RGB 字）</button>
+      </div>
     </div>
 
-    <div style="background: #2a1a10; border: 1px solid #ff7a45; border-left: 4px solid #ff7a45; border-radius: 6px; padding: 12px 16px; margin: 12px 0 16px; font-size: 13px; color: #e8e8ec;">
+    <div class="warning-banner">
       ⚠️ <b>数字叠加要用 Multiply 混合模式</b>：CMYK share 是减色油墨模型——物理叠加时油墨吸光，相当于 RGB 通道取 MIN。但 Photoshop / Figma 默认是 Normal 混合（上层覆盖下层），叠加效果会错。把上层 share 的混合模式改成 <b>Multiply (正片叠底)</b>，结果才对。打印到透明胶片物理叠加就没这个问题（油墨真的会减色）。
     </div>
 
     <div class="size-hint-row" id="colorSizeHint">
-      <span>📐 预览 share：<b id="colorShareSizeText">—</b> ≈ <b id="colorPrintSizeText">—</b> @ 300 DPI</span>
-      <span>🖨️ 点"导出打印"会按设定的 <b id="colorExportMmText">148mm</b> 长边重新以 300 DPI 渲染</span>
-      <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
+      <span data-tip="按 300 DPI 渲染算的物理 mm。这是预览展示的等效尺寸，打印导出会按你设定的「打印尺寸」长边重新算。">📐 预览尺寸：<b id="colorShareSizeText">—</b> ≈ <b id="colorPrintSizeText">—</b></span>
+      <span data-tip="300 DPI 重算。短边按上传图本身的比例同步缩放，不强制方形。">🖨️ 导出将按 <b id="colorExportMmText">148mm</b>（最长边长）重算</span>
+      <span class="ref" data-tip="ISO 216 国际纸张尺寸（mm）。每往上一级长边 ×√2，对折后等比缩小。">参考：A6=105×148 · A5=148×210 · A4=210×297</span>
     </div>
 
     <div class="grid-2">
       <div class="card">
-        <h3>原图</h3>
+        <div class="card-head">
+          <h3>原图</h3>
+          <label class="file-mini" data-file-for="colorFile">
+            <input type="file" id="colorFile" accept="image/*">
+            <span class="file-mini-label">📁 选图</span>
+          </label>
+        </div>
         <div class="desc">CMYK 四通道分别加密（4 套 2-out-of-2）</div>
-        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorOrig"></canvas><div class="empty" id="colorOrigEmpty">先上传彩色图</div></div>
+        <div class="canvas-wrap"><canvas id="colorOrig"></canvas><div class="empty" id="colorOrigEmpty">先上传彩色图</div></div>
       </div>
       <div class="card">
-        <h3>叠加结果 S1 + S2</h3>
+        <h3>叠加结果预览 S1 + S2</h3>
         <div class="desc">用 RGB MIN 模拟油墨叠加（减色）→ 还原彩色原图</div>
-        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorOverlay"></canvas><div class="empty" id="colorOverlayEmpty">生成后显示</div></div>
+        <div class="canvas-wrap"><canvas id="colorOverlay"></canvas><div class="empty" id="colorOverlayEmpty">生成后显示</div></div>
       </div>
       <div class="card">
         <h3>Share 1</h3>
         <div class="desc">彩色噪声 — CMYK 4 通道随机油墨拼成的"印刷网点"</div>
-        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorS1"></canvas><div class="empty" id="colorS1Empty">—</div></div>
+        <div class="canvas-wrap"><canvas id="colorS1"></canvas><div class="empty" id="colorS1Empty">—</div></div>
         <div class="actions"><button class="ghost" data-color-download="s1">下载透明 PNG</button></div>
       </div>
       <div class="card">
         <h3>Share 2</h3>
         <div class="desc">彩色噪声 — 单看也无信息</div>
-        <div class="canvas-wrap" style="aspect-ratio: auto; min-height: 220px;"><canvas id="colorS2"></canvas><div class="empty" id="colorS2Empty">—</div></div>
+        <div class="canvas-wrap"><canvas id="colorS2"></canvas><div class="empty" id="colorS2Empty">—</div></div>
         <div class="actions"><button class="ghost" data-color-download="s2">下载透明 PNG</button></div>
       </div>
     </div>
@@ -423,53 +1729,137 @@
   <!-- ============== TAB 3: 3-SHARE / 3-SECRET (HALFTONE, PRINT-READY) ============== -->
   <div class="panel-content" id="panel-halftone">
     <div class="controls">
-      <label>子像素边长 N：<input type="range" id="htSide" min="3" max="8" value="4"> <span class="value" id="htSideVal">4</span></label>
-      <label>SEP 强度 K：<input type="range" id="htK" min="1" max="10" value="2"> <span class="value" id="htKVal">2</span> 对/pair</label>
-      <label>秘密分辨率：<input type="range" id="htRes" min="40" max="2000" value="120" step="20"> <span class="value" id="htResVal">120</span> px</label>
-      <label>打印尺寸：<input type="range" id="htPrintMm" min="60" max="320" value="148" step="2"> <span class="value" id="htPrintMmVal">148</span> mm
-        <span class="preset-chips">
-          <button class="preset-chip" data-ht-preset="90">名片 90</button>
-          <button class="preset-chip" data-ht-preset="148">明信片 148</button>
-          <button class="preset-chip" data-ht-preset="210">色卡 210</button>
-          <button class="preset-chip" data-ht-preset="310">文件夹 310</button>
-        </span>
+      <label class="ctrl">
+        <span class="ctrl-name">分辨率</span>
+        <input type="range" id="htRes" min="40" max="2000" value="120" step="20">
+        <span class="value" id="htResVal" contenteditable="true" inputmode="numeric" data-slider="htRes" spellcheck="false">120</span>
+        <span class="ctrl-unit">px</span>
+        <span class="ctrl-info" data-tip="秘密图二值化后的边长。最终 share 尺寸 = 分辨率 × N。仅影响预览，打印导出按 mm 独立重算。">?</span>
       </label>
-      <label><input type="checkbox" id="htRegMark"> 加四角对位标记 +</label>
-      <button id="htGenBtn" disabled>已上传 0/3 — 再上传 3 张</button>
-      <button id="htPrintAllBtn" disabled>导出 3 张打印 PNG（300 DPI 透明）</button>
-      <button class="ghost" id="htDemoBtn">用示例图（★ ♥ ☀）</button>
-      <span id="htParamInfo" style="color: var(--muted); font-size: 12px;"></span>
+      <label class="ctrl">
+        <span class="ctrl-name">子像素边长 N</span>
+        <input type="range" id="htSide" min="3" max="8" value="4">
+        <span class="value" id="htSideVal" contenteditable="true" inputmode="numeric" data-slider="htSide" spellcheck="false">4</span>
+        <span class="ctrl-unit">N×N</span>
+        <span class="ctrl-info" data-tip="每个秘密像素扩展成 N×N 子像素块。约束: 6K ≤ N²（K 会自动跟随调整）。N 越大网点越细但 share 越大。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">SEP 强度 K</span>
+        <input type="range" id="htK" min="1" max="10" value="2">
+        <span class="value" id="htKVal" contenteditable="true" inputmode="numeric" data-slider="htK" spellcheck="false">2</span>
+        <span class="ctrl-unit">对</span>
+        <span class="ctrl-info" data-tip="Secret Encoding Pixel 对数。K 越大→叠加时秘密对比越强但单 share 局部噪声越重。最大值受 N 约束（⌊N²/6⌋）。">?</span>
+      </label>
+      <label class="ctrl-check" id="htDitherRow">
+        <span class="ctrl-name">
+          <input type="checkbox" id="htDither" checked>
+          FS 抖动
+        </span>
+        <span class="ctrl-reminder">灰度图/照片建议开</span>
+        <span class="ctrl-info" data-tip="开：Floyd-Steinberg 误差扩散，照片类秘密保留中间灰。关：纯硬阈值，logo/文字/剪影最锐利。三张秘密共用此设置。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">二值化阈值</span>
+        <input type="range" id="htThreshold" min="0" max="255" value="128">
+        <span class="value" id="htThresholdVal" contenteditable="true" inputmode="numeric" data-slider="htThreshold" spellcheck="false">128</span>
+        <span class="ctrl-unit">0-255</span>
+        <span class="ctrl-info" data-tip="二值化判断点。开 FS 时是色调偏移（低→偏黑，高→偏白）；关 FS 时是纯硬阈值切分。三张秘密图共用此值。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">网点粗细</span>
+        <input type="range" id="htScale" min="1" max="4" value="1">
+        <span class="value" id="htScaleVal" contenteditable="true" inputmode="decimal" data-slider="htScale" data-display="mm" spellcheck="false">0.08</span>
+        <span class="ctrl-unit">mm</span>
+        <span class="ctrl-info" data-tip="每个子像素在 300 DPI 打印下的物理大小（额外放大倍数）。实际网点粗细 = N × 此值。1 倍 ≈ 0.08mm（最细），4 倍 ≈ 0.34mm（最粗）。">?</span>
+      </label>
+      <label class="ctrl">
+        <span class="ctrl-name">打印尺寸</span>
+        <input type="range" id="htPrintMm" min="60" max="320" value="148" step="2">
+        <span class="value" id="htPrintMmVal" contenteditable="true" inputmode="numeric" data-slider="htPrintMm" spellcheck="false">148</span>
+        <span class="ctrl-unit">mm</span>
+        <span class="ctrl-info" data-tip="导出长边的 mm 物理尺寸，300 DPI 重算。⚠️ 这是图片**长边**对应 mm 数，比例由你上传的秘密图本身决定，工具不会替你改比例。要做明信片（105×148mm）就上传 105:148 比例的秘密图。不影响预览。">?</span>
+      </label>
+      <div class="ctrl-presets">
+        <button class="preset-chip" data-ht-preset="90" data-mm="90">名片</button>
+        <button class="preset-chip" data-ht-preset="148" data-mm="148">明信片</button>
+        <button class="preset-chip" data-ht-preset="210" data-mm="210">色卡</button>
+        <button class="preset-chip" data-ht-preset="310" data-mm="310">文件夹</button>
+      </div>
+      <div class="ctrl-actions">
+        <div class="action-group">
+          <button id="htPrintAllBtn" disabled>导出 3 张打印 PNG（300 DPI 透明）</button>
+          <label class="ctrl-sub-check">
+            <input type="checkbox" id="htRegMark">
+            加四角对位标记 +
+            <span class="ctrl-info" data-tip="在导出的 PNG 四角加 + 字标记，物理叠加透明胶片时用来对齐。">?</span>
+          </label>
+        </div>
+        <button id="htGenBtn" disabled>已上传 0/3 — 再上传 3 张</button>
+        <button class="ghost demo-btn" id="htDemoBtn">用示例图（★ ♥ ☀）</button>
+      </div>
     </div>
 
     <div class="size-hint-row" id="htSizeHint">
-      <span>📐 预览 share：<b id="htShareSizeText">—</b> ≈ <b id="htPrintSizeText">—</b> @ 300 DPI</span>
-      <span>🖨️ 点"导出打印"会按设定的 <b id="htExportMmText">148mm</b> 长边重新以 300 DPI 渲染（用第一张秘密的比例）</span>
-      <span class="ref">参考：A6=105×148mm · A5=148×210mm · A4=210×297mm</span>
+      <span data-tip="按 300 DPI 渲染算的物理 mm。这是预览展示的等效尺寸，打印导出会按你设定的「打印尺寸」长边重新算。">📐 预览尺寸：<b id="htShareSizeText">—</b> ≈ <b id="htPrintSizeText">—</b></span>
+      <span data-tip="300 DPI 重算。**短边按第一张上传的秘密图比例**同步缩放，三张秘密如果比例不同会以第一张为准。">🖨️ 导出将按 <b id="htExportMmText">148mm</b>（最长边长）重算</span>
+      <span id="htParamInfo" data-tip="叠加 2 张 share 时，秘密像素被 K 个 SEP 编码 → 信号对比 = K/N²。K_max = ⌊N²/6⌋（受 6K ≤ N² 约束）。比值越高叠加越清晰，单 share 局部噪声也越重。">📊 单 pair 信号对比 12.5%（K_max = 2）</span>
+      <span class="ref" data-tip="ISO 216 国际纸张尺寸（mm）。每往上一级长边 ×√2，对折后等比缩小。">参考：A6=105×148 · A5=148×210 · A4=210×297</span>
     </div>
 
     <h3 style="margin: 0 0 10px; font-size: 14px; color: var(--muted);">① 上传三张秘密图（每张对应一对 share 叠加时显形）</h3>
     <div class="grid-3">
       <div class="card">
-        <h3><span class="pair-label">S1+S2</span> 秘密 #1</h3>
+        <div class="card-head">
+          <h3><span class="pair-label">S1+S2</span> 秘密 #1</h3>
+          <label class="file-mini" data-file-for="htFileS12">
+            <input type="file" data-ht="s12" id="htFileS12" accept="image/*">
+            <span class="file-mini-label">📁 选图</span>
+          </label>
+        </div>
         <div class="desc">叠加 Share 1 + Share 2 时显形</div>
-        <div class="upload-row"><input type="file" data-ht="s12" accept="image/*"></div>
         <div class="canvas-wrap"><canvas id="htS12"></canvas><div class="empty" id="htS12Empty">上传图片</div></div>
       </div>
       <div class="card">
-        <h3><span class="pair-label">S1+S3</span> 秘密 #2</h3>
+        <div class="card-head">
+          <h3><span class="pair-label">S1+S3</span> 秘密 #2</h3>
+          <label class="file-mini" data-file-for="htFileS13">
+            <input type="file" data-ht="s13" id="htFileS13" accept="image/*">
+            <span class="file-mini-label">📁 选图</span>
+          </label>
+        </div>
         <div class="desc">叠加 Share 1 + Share 3 时显形</div>
-        <div class="upload-row"><input type="file" data-ht="s13" accept="image/*"></div>
         <div class="canvas-wrap"><canvas id="htS13"></canvas><div class="empty" id="htS13Empty">上传图片</div></div>
       </div>
       <div class="card">
-        <h3><span class="pair-label">S2+S3</span> 秘密 #3</h3>
+        <div class="card-head">
+          <h3><span class="pair-label">S2+S3</span> 秘密 #3</h3>
+          <label class="file-mini" data-file-for="htFileS23">
+            <input type="file" data-ht="s23" id="htFileS23" accept="image/*">
+            <span class="file-mini-label">📁 选图</span>
+          </label>
+        </div>
         <div class="desc">叠加 Share 2 + Share 3 时显形</div>
-        <div class="upload-row"><input type="file" data-ht="s23" accept="image/*"></div>
         <div class="canvas-wrap"><canvas id="htS23"></canvas><div class="empty" id="htS23Empty">上传图片</div></div>
       </div>
     </div>
 
-    <h3 style="margin: 24px 0 10px; font-size: 14px; color: var(--muted);">② 三张 Share（每张就是均匀网点噪声，单看完全无信息）</h3>
+    <h3 style="margin: 24px 0 10px; font-size: 14px; color: var(--muted);">② 三对 Share 的物理叠加预览（OR 模拟）</h3>
+    <div class="grid-3">
+      <div class="card">
+        <h3><span class="pair-label">S1+S2</span> → 应显出 秘密 #1</h3>
+        <div class="canvas-wrap"><canvas id="htOv12"></canvas><div class="empty" id="htOv12Empty">三张秘密都上传后<br>显示叠加</div></div>
+      </div>
+      <div class="card">
+        <h3><span class="pair-label">S1+S3</span> → 应显出 秘密 #2</h3>
+        <div class="canvas-wrap"><canvas id="htOv13"></canvas><div class="empty" id="htOv13Empty">三张秘密都上传后<br>显示叠加</div></div>
+      </div>
+      <div class="card">
+        <h3><span class="pair-label">S2+S3</span> → 应显出 秘密 #3</h3>
+        <div class="canvas-wrap"><canvas id="htOv23"></canvas><div class="empty" id="htOv23Empty">三张秘密都上传后<br>显示叠加</div></div>
+      </div>
+    </div>
+
+    <h3 style="margin: 20px 0 10px; font-size: 14px; color: var(--muted);">③ 三张 Share（每张就是均匀网点噪声，单看完全无信息）</h3>
     <div class="grid-3">
       <div class="card">
         <h3>Share 1 <span class="pair-label">打印</span></h3>
@@ -494,22 +1884,6 @@
         <div class="actions">
           <button class="ghost" data-ht-download="s3">预览 PNG</button>
         </div>
-      </div>
-    </div>
-
-    <h3 style="margin: 20px 0 10px; font-size: 14px; color: var(--muted);">③ 三对 Share 的物理叠加预览（OR 模拟）</h3>
-    <div class="grid-3">
-      <div class="card">
-        <h3><span class="pair-label">S1+S2</span> → 应显出 秘密 #1</h3>
-        <div class="canvas-wrap"><canvas id="htOv12"></canvas><div class="empty" id="htOv12Empty">三张秘密都上传后<br>显示叠加</div></div>
-      </div>
-      <div class="card">
-        <h3><span class="pair-label">S1+S3</span> → 应显出 秘密 #2</h3>
-        <div class="canvas-wrap"><canvas id="htOv13"></canvas><div class="empty" id="htOv13Empty">三张秘密都上传后<br>显示叠加</div></div>
-      </div>
-      <div class="card">
-        <h3><span class="pair-label">S2+S3</span> → 应显出 秘密 #3</h3>
-        <div class="canvas-wrap"><canvas id="htOv23"></canvas><div class="empty" id="htOv23Empty">三张秘密都上传后<br>显示叠加</div></div>
       </div>
     </div>
 
@@ -542,18 +1916,691 @@
       物理打印：胶片 + 激光打印机 → 实际尺寸 100% 打印（不要"自适应页面"）→ 角标对齐叠加即可。
     </div>
   </div>
+
+  <div class="status-line">
+    <span><span class="dot"></span>VC_PLAYGROUND / v1.0 / single-file HTML / no deps</span>
+    <span>NAOR-SHAMIR · 1994 → 2026 · MADE BY SUANOVIL</span>
+  </div>
+  </main>
 </div>
 
+<!-- ============ TWEAK PANEL (dev mode UI iteration) ============ -->
+<button class="tweak-toggle-btn" id="tweakToggleBtn">🎛 TWEAK</button>
+<button class="text-edit-btn" id="textEditBtn">📝 TEXT</button>
+<div class="te-panel" id="tePanel">
+  <h4>📝 文字编辑模式</h4>
+  <div class="te-hint">
+    点击页面任何 <b style="color: var(--accent);">橙色虚线框</b> 内的文字直接编辑。<br>
+    改动会自动保存到浏览器本地。
+  </div>
+  <button id="teExportBtn" type="button">📋 复制所有改动 JSON</button>
+  <button id="teResetBtn" type="button">↺ 重置所有文字</button>
+  <pre class="te-snapshot" id="teSnapshot"></pre>
+</div>
+<div class="tweak-panel hidden" id="tweakPanel">
+  <div class="tp-header">
+    <span>🎛 TWEAK PANEL · LIVE</span>
+    <button class="tp-close" id="tweakClose" type="button">×</button>
+  </div>
+
+  <h4>TYPOGRAPHY</h4>
+  <div class="tp-row"><span class="tp-label">h1 size</span><input type="range" min="14" max="48" step="1" value="35" data-var="--h1-size" data-unit="px"><output>35</output></div>
+  <div class="tp-row"><span class="tp-label">body size</span><input type="range" min="11" max="24" step="1" value="18" data-var="--body-size" data-unit="px"><output>18</output></div>
+  <div class="tp-row"><span class="tp-label">letter sp.</span><input type="range" min="-20" max="20" step="1" value="8" data-var="--letter-spacing" data-unit="" data-suffix="em" data-scale="0.001"><output>8</output></div>
+
+  <h4>SPACING</h4>
+  <div class="tp-row"><span class="tp-label">body pad Y</span><input type="range" min="8" max="64" step="2" value="44" data-var="--body-pad-y" data-unit="px"><output>44</output></div>
+  <div class="tp-row"><span class="tp-label">body pad X</span><input type="range" min="8" max="48" step="2" value="30" data-var="--body-pad-x" data-unit="px"><output>30</output></div>
+  <div class="tp-row"><span class="tp-label">card pad</span><input type="range" min="6" max="32" step="1" value="21" data-var="--card-pad" data-unit="px"><output>21</output></div>
+  <div class="tp-row"><span class="tp-label">grid gap</span><input type="range" min="2" max="32" step="2" value="20" data-var="--grid-gap" data-unit="px"><output>20</output></div>
+  <div class="tp-row"><span class="tp-label">tab pad X</span><input type="range" min="6" max="32" step="1" value="17" data-var="--tab-pad-x" data-unit="px"><output>17</output></div>
+  <div class="tp-row"><span class="tp-label">tab pad Y</span><input type="range" min="4" max="20" step="1" value="9" data-var="--tab-pad-y" data-unit="px"><output>9</output></div>
+
+  <h4>CONTROLS PANEL</h4>
+  <div class="tp-row"><span class="tp-label">name size</span><input type="range" min="11" max="24" step="1" value="16" data-var="--ctrl-name-size" data-unit="px"><output>16</output></div>
+  <div class="tp-row"><span class="tp-label">value size</span><input type="range" min="11" max="24" step="1" value="14" data-var="--ctrl-value-size" data-unit="px"><output>14</output></div>
+  <div class="tp-row"><span class="tp-label">col gap</span><input type="range" min="2" max="32" step="1" value="4" data-var="--ctrl-col-gap" data-unit="px"><output>4</output></div>
+  <div class="tp-row"><span class="tp-label">row gap</span><input type="range" min="2" max="24" step="1" value="8" data-var="--ctrl-row-gap" data-unit="px"><output>8</output></div>
+  <div class="tp-row"><span class="tp-label">action gap</span><input type="range" min="0" max="40" step="2" value="20" data-var="--ctrl-actions-gap" data-unit="px"><output>20</output></div>
+  <div class="tp-row"><span class="tp-label">name col w</span><input type="range" min="80" max="280" step="4" value="100" data-var="--ctrl-name-col" data-unit="px"><output>100</output></div>
+  <div class="tp-row"><span class="tp-label">unit col w</span><input type="range" min="30" max="120" step="2" value="50" data-var="--ctrl-unit-col" data-unit="px"><output>50</output></div>
+  <div class="tp-row"><span class="tp-label">reminder L</span><input type="range" min="-60" max="120" step="2" value="24" data-var="--ctrl-reminder-padl" data-unit="px"><output>24</output></div>
+  <div class="tp-row"><span class="tp-label">hint size</span><input type="range" min="10" max="20" step="1" value="13" data-var="--hint-size" data-unit="px"><output>13</output></div>
+  <div class="tp-row"><span class="tp-label">hint ref size</span><input type="range" min="9" max="20" step="1" value="12" data-var="--hint-ref-size" data-unit="px"><output>12</output></div>
+  <div class="tp-row"><span class="tp-label">name dark</span><input type="color" id="tweakNameDark" value="#d4d4d4"><output id="tweakNameDarkVal">#d4d4d4</output></div>
+  <div class="tp-row"><span class="tp-label">name light</span><input type="color" id="tweakNameLight" value="#333333"><output id="tweakNameLightVal">#333333</output></div>
+
+  <h4>BORDER RADIUS</h4>
+  <div class="tp-row"><span class="tp-label">card</span><input type="range" min="0" max="32" step="1" value="14" data-var="--card-radius" data-unit="px"><output>14</output></div>
+  <div class="tp-row"><span class="tp-label">button</span><input type="range" min="0" max="28" step="1" value="17" data-var="--btn-radius" data-unit="px"><output>17</output></div>
+
+  <h4>EFFECTS</h4>
+  <div class="tp-row"><span class="tp-label">dot grid</span><input type="range" min="8" max="48" step="2" value="26" data-var="--dot-size" data-unit="px"><output>26</output></div>
+  <div class="tp-row"><span class="tp-label">blink (ms)</span><input type="range" min="300" max="2500" step="50" value="1250" data-var="--blink-speed" data-unit="ms"><output>1250</output></div>
+
+  <h4>COLOR</h4>
+  <div class="tp-row"><span class="tp-label">accent</span><input type="color" id="tweakAccent" value="#ff7a45"><output id="tweakAccentVal">#ff7a45</output></div>
+
+  <div class="tp-footer">
+    <button id="tweakCopy" type="button">📋 COPY CSS SNAPSHOT</button>
+    <button id="tweakEditLayout" type="button">🔧 EDIT MAIN LAYOUT</button>
+    <button id="tweakReset" type="button">↺ RESET ALL</button>
+    <pre class="tp-snapshot" id="tweakSnapshot"></pre>
+  </div>
+</div>
+
+<div class="le-banner">🔧 LAYOUT EDIT — DRAG MAIN CONTROLS TO REORDER · CLICK 'DONE' TO EXIT</div>
+
 <script>
+// =================== Theme toggle (light / dark) ===================
+(function() {
+  const root = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    btn.textContent = theme === 'dark' ? '◐ LIGHT' : '◑ DARK';
+    try { localStorage.setItem('vc_theme', theme); } catch (e) {}
+  }
+  let saved = null;
+  try { saved = localStorage.getItem('vc_theme'); } catch (e) {}
+  // 默认 light，用户主动切换才会改
+  if (!saved) saved = 'light';
+  // 初始按钮文字按 saved 主题来设
+  // (apply() 会同步)
+  apply(saved);
+  btn.addEventListener('click', () => {
+    apply(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+})();
+
+// =================== Tweak panel ===================
+(function() {
+  const toggleBtn = document.getElementById('tweakToggleBtn');
+  const panel = document.getElementById('tweakPanel');
+  const closeBtn = document.getElementById('tweakClose');
+  const copyBtn = document.getElementById('tweakCopy');
+  const resetBtn = document.getElementById('tweakReset');
+  const snapshotEl = document.getElementById('tweakSnapshot');
+  const accentInput = document.getElementById('tweakAccent');
+  const accentVal = document.getElementById('tweakAccentVal');
+  const sliders = panel.querySelectorAll('input[data-var]');
+  const initialValues = {};
+  sliders.forEach(s => initialValues[s.dataset.var] = s.value);
+  initialValues['--accent'] = accentInput.value;
+
+  function show() { panel.classList.remove('hidden'); toggleBtn.style.display = 'none'; }
+  function hide() { panel.classList.add('hidden');    toggleBtn.style.display = ''; }
+  toggleBtn.addEventListener('click', show);
+  closeBtn.addEventListener('click', hide);
+
+  function applySlider(input) {
+    const raw = parseFloat(input.value);
+    const scale = parseFloat(input.dataset.scale || '1');
+    const value = (raw * scale).toString();
+    const unit = input.dataset.unit || '';
+    const suffix = input.dataset.suffix || '';
+    document.documentElement.style.setProperty(input.dataset.var, value + unit + suffix);
+    const out = input.parentElement.querySelector('output');
+    if (out) out.textContent = input.value;
+  }
+  sliders.forEach(input => {
+    applySlider(input);
+    input.addEventListener('input', () => applySlider(input));
+  });
+
+  function applyAccent() {
+    document.documentElement.style.setProperty('--accent', accentInput.value);
+    document.documentElement.style.setProperty('--accent-2', accentInput.value);
+    accentVal.textContent = accentInput.value;
+  }
+  accentInput.addEventListener('input', applyAccent);
+  applyAccent();
+
+  // ctrl name color pickers (dark / light 各自一个)
+  const ctrlNameDarkInput = document.getElementById('tweakNameDark');
+  const ctrlNameDarkVal = document.getElementById('tweakNameDarkVal');
+  const ctrlNameLightInput = document.getElementById('tweakNameLight');
+  const ctrlNameLightVal = document.getElementById('tweakNameLightVal');
+  function applyCtrlNameDark() {
+    if (!ctrlNameDarkInput) return;
+    document.documentElement.style.setProperty('--ctrl-name-dark', ctrlNameDarkInput.value);
+    ctrlNameDarkVal.textContent = ctrlNameDarkInput.value;
+  }
+  function applyCtrlNameLight() {
+    if (!ctrlNameLightInput) return;
+    document.documentElement.style.setProperty('--ctrl-name-light', ctrlNameLightInput.value);
+    ctrlNameLightVal.textContent = ctrlNameLightInput.value;
+  }
+  if (ctrlNameDarkInput) {
+    ctrlNameDarkInput.addEventListener('input', applyCtrlNameDark);
+    applyCtrlNameDark();
+    initialValues['--ctrl-name-dark'] = ctrlNameDarkInput.value;
+  }
+  if (ctrlNameLightInput) {
+    ctrlNameLightInput.addEventListener('input', applyCtrlNameLight);
+    applyCtrlNameLight();
+    initialValues['--ctrl-name-light'] = ctrlNameLightInput.value;
+  }
+
+  copyBtn.addEventListener('click', () => {
+    const lines = ['/* === VC Playground tweaked CSS variables === */', ':root {'];
+    sliders.forEach(input => {
+      const raw = parseFloat(input.value);
+      const scale = parseFloat(input.dataset.scale || '1');
+      const value = (raw * scale).toString();
+      const unit = input.dataset.unit || '';
+      const suffix = input.dataset.suffix || '';
+      lines.push(`  ${input.dataset.var}: ${value + unit + suffix};   /* ${input.value} */`);
+    });
+    lines.push(`  --accent: ${accentInput.value};`);
+    if (ctrlNameDarkInput) lines.push(`  --ctrl-name-dark: ${ctrlNameDarkInput.value};`);
+    if (ctrlNameLightInput) lines.push(`  --ctrl-name-light: ${ctrlNameLightInput.value};`);
+    lines.push('}');
+    const text = lines.join('\n');
+    snapshotEl.textContent = text;
+    snapshotEl.style.display = 'block';
+    try {
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = '✓ COPIED TO CLIPBOARD';
+        setTimeout(() => copyBtn.textContent = '📋 COPY CSS SNAPSHOT', 1500);
+      });
+    } catch (e) {
+      copyBtn.textContent = '📋 COPY CSS SNAPSHOT';
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    sliders.forEach(input => {
+      input.value = initialValues[input.dataset.var];
+      applySlider(input);
+    });
+    accentInput.value = initialValues['--accent'];
+    applyAccent();
+    if (ctrlNameDarkInput && initialValues['--ctrl-name-dark']) {
+      ctrlNameDarkInput.value = initialValues['--ctrl-name-dark'];
+      applyCtrlNameDark();
+    }
+    if (ctrlNameLightInput && initialValues['--ctrl-name-light']) {
+      ctrlNameLightInput.value = initialValues['--ctrl-name-light'];
+      applyCtrlNameLight();
+    }
+    snapshotEl.style.display = 'none';
+  });
+
+  // ---- EDIT LAYOUT mode for main .controls bars ----
+  const editLayoutBtn = document.getElementById('tweakEditLayout');
+  let leSrc = null;
+
+  function leDragStart(e) {
+    leSrc = this;
+    this.classList.add('le-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', ''); } catch(err) {}
+  }
+  function leDragEnd() {
+    this.classList.remove('le-dragging');
+    document.querySelectorAll('.controls > *').forEach(el => {
+      el.classList.remove('le-drop-before', 'le-drop-after');
+    });
+    leSrc = null;
+  }
+  function leDragOver(e) {
+    e.preventDefault();
+    if (!leSrc || leSrc === this) return;
+    const rect = this.getBoundingClientRect();
+    const after = (e.clientX - rect.left) > rect.width / 2;
+    this.classList.toggle('le-drop-before', !after);
+    this.classList.toggle('le-drop-after', after);
+  }
+  function leDragLeave() {
+    this.classList.remove('le-drop-before', 'le-drop-after');
+  }
+  function leDrop(e) {
+    e.preventDefault();
+    if (!leSrc || leSrc === this) return;
+    const rect = this.getBoundingClientRect();
+    const after = (e.clientX - rect.left) > rect.width / 2;
+    this.parentNode.insertBefore(leSrc, after ? this.nextSibling : this);
+    this.classList.remove('le-drop-before', 'le-drop-after');
+  }
+
+  function enterLayoutEdit() {
+    document.body.classList.add('layout-edit');
+    editLayoutBtn.textContent = '✓ DONE EDITING';
+    document.querySelectorAll('.controls > *').forEach(el => {
+      el.draggable = true;
+      el.addEventListener('dragstart', leDragStart);
+      el.addEventListener('dragend', leDragEnd);
+      el.addEventListener('dragover', leDragOver);
+      el.addEventListener('dragleave', leDragLeave);
+      el.addEventListener('drop', leDrop);
+    });
+  }
+  function exitLayoutEdit() {
+    document.body.classList.remove('layout-edit');
+    editLayoutBtn.textContent = '🔧 EDIT MAIN LAYOUT';
+    document.querySelectorAll('.controls > *').forEach(el => {
+      el.draggable = false;
+      el.removeEventListener('dragstart', leDragStart);
+      el.removeEventListener('dragend', leDragEnd);
+      el.removeEventListener('dragover', leDragOver);
+      el.removeEventListener('dragleave', leDragLeave);
+      el.removeEventListener('drop', leDrop);
+    });
+  }
+  editLayoutBtn.addEventListener('click', () => {
+    if (document.body.classList.contains('layout-edit')) exitLayoutEdit();
+    else enterLayoutEdit();
+  });
+
+  // ---- Drag panel by header ----
+  const header = panel.querySelector('.tp-header');
+  let dragging = false, dx = 0, dy = 0;
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.tagName === 'BUTTON') return;
+    dragging = true;
+    const r = panel.getBoundingClientRect();
+    dx = e.clientX - r.left;
+    dy = e.clientY - r.top;
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    panel.style.left = (e.clientX - dx) + 'px';
+    panel.style.top = (e.clientY - dy) + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+  });
+  window.addEventListener('mouseup', () => {
+    if (dragging) { dragging = false; document.body.style.userSelect = ''; }
+  });
+
+})();
+</script>
+
+<script>
+// =================== File mini buttons (inline header file picker) ===================
+// 当 input[type=file] 改动时，把外层 .file-mini 的 label 改成文件名（截断），加 has-file 高亮
+document.querySelectorAll('.file-mini input[type="file"]').forEach(input => {
+  input.addEventListener('change', () => {
+    const wrap = input.closest('.file-mini');
+    const labelSpan = wrap.querySelector('.file-mini-label');
+    if (input.files && input.files[0]) {
+      const name = input.files[0].name;
+      // 截断显示：长名字保留前 8 + ... + 后 6
+      const short = name.length > 18 ? (name.slice(0, 8) + '…' + name.slice(-6)) : name;
+      labelSpan.textContent = '✓ ' + short;
+      wrap.classList.add('has-file');
+      wrap.title = name;
+    } else {
+      labelSpan.textContent = '📁 选图';
+      wrap.classList.remove('has-file');
+      wrap.title = '';
+    }
+  });
+});
+
+// =================== Editable value spans (sync with sliders) ===================
+// 网点粗细：scale (integer multiplier of subpixel) → mm at 300 DPI
+const MM_PER_SCALE = 25.4 / 300; // ≈ 0.0847 mm
+function scaleToMm(scale) { return (parseFloat(scale) * MM_PER_SCALE).toFixed(2); }
+function mmToScale(mm) { return Math.max(1, Math.round(parseFloat(mm) / MM_PER_SCALE)); }
+
+document.querySelectorAll('.value[data-slider]').forEach(span => {
+  const slider = document.getElementById(span.dataset.slider);
+  if (!slider) return;
+  const isMm = span.dataset.display === 'mm';
+  function commit() {
+    let v = parseFloat(span.textContent);
+    if (isNaN(v)) {
+      span.textContent = isMm ? scaleToMm(slider.value) : slider.value;
+      return;
+    }
+    if (isMm) v = mmToScale(v);
+    const min = parseFloat(slider.min);
+    const max = parseFloat(slider.max);
+    if (!isNaN(min)) v = Math.max(min, v);
+    if (!isNaN(max)) v = Math.min(max, v);
+    slider.value = v;
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    slider.dispatchEvent(new Event('change', { bubbles: true }));
+    span.textContent = isMm ? scaleToMm(slider.value) : slider.value;
+  }
+  span.addEventListener('blur', commit);
+  span.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      span.blur();
+    } else if (e.key === 'Escape') {
+      span.textContent = isMm ? scaleToMm(slider.value) : slider.value;  // 取消编辑
+      span.blur();
+    }
+  });
+  // 防止换行 / 粘贴富文本
+  span.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    document.execCommand('insertText', false, text.replace(/[^\d.\-]/g, ''));
+  });
+});
+
+// =================== Sidebar layout: relocate .controls into sidebar ===================
+(function relocateForSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  document.querySelectorAll('.panel-content').forEach(panel => {
+    const tabName = panel.id.replace('panel-', '');
+    const isActive = panel.classList.contains('active');
+    const controls = panel.querySelector(':scope > .controls');
+    if (!controls) return;
+    const ctrlActions = controls.querySelector(':scope > .ctrl-actions');
+    const sizeHintRow = panel.querySelector(':scope > .size-hint-row');
+
+    const sp = document.createElement('div');
+    sp.className = 'sidebar-panel' + (isActive ? ' active' : '');
+    sp.dataset.panel = tabName;
+
+    const ss = document.createElement('div');
+    ss.className = 'sidebar-scroll';
+
+    // 把 ctrl-actions 抽走（最后放进 sidebar-actions）
+    let savedActions = null;
+    if (ctrlActions) savedActions = ctrlActions;
+
+    // 把 size-hint-row 抽走，回头改造成 sidebar-hints
+    ss.appendChild(controls);
+    if (sizeHintRow) {
+      const hintsBox = sizeHintRow;
+      hintsBox.className = 'sidebar-hints';
+      // 每个 span 改造成 sidebar-hint，第一个 <span class="ref"> 标 ref
+      ss.appendChild(hintsBox);
+    }
+
+    sp.appendChild(ss);
+    if (savedActions) {
+      const sa = document.createElement('div');
+      sa.className = 'sidebar-actions';
+      sa.appendChild(savedActions);
+      sp.appendChild(sa);
+    }
+    sidebar.appendChild(sp);
+
+    panel.classList.remove('panel-content');
+    panel.classList.add('main-panel');
+    panel.dataset.panel = tabName;
+  });
+
+  // 把每个 sidebar-hints 里的 <span> 改造成 sidebar-hint div + 把 data-tip 变成 ? 图标
+  // 关键：复用原 span 元素（保留 id 和子元素 id），不要重建，否则 const 引用全失效
+  document.querySelectorAll('.sidebar-hints').forEach(hintsBox => {
+    const spans = Array.from(hintsBox.children);
+    hintsBox.innerHTML = '';
+    spans.forEach(span => {
+      const isRef = span.classList.contains('ref');
+      const div = document.createElement('div');
+      div.className = 'sidebar-hint' + (isRef ? ' ref' : '');
+      // 复用原 span（保留 id），把它当 hint-text 用
+      span.classList.add('hint-text');
+      span.classList.remove('ref');
+      div.appendChild(span);
+      const tip = span.dataset.tip;
+      if (tip) {
+        const info = document.createElement('span');
+        info.className = 'ctrl-info';
+        info.dataset.tip = tip;
+        info.textContent = '?';
+        div.appendChild(info);
+        // 移除原 span 的 data-tip，避免双重 tooltip 行为
+        delete span.dataset.tip;
+      }
+      hintsBox.appendChild(div);
+    });
+  });
+})();
+
 // =================== Tab switching ===================
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.sidebar-panel, .main-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.panel === tab);
+    });
   });
 });
+
+// =================== Floating tooltip (right / left / below) ===================
+(function() {
+  const tip = document.createElement('div');
+  tip.className = 'float-tip';
+  document.body.appendChild(tip);
+
+  function show(target, text, opts = {}) {
+    if (!text) return;
+    // 富格式（compact 模式下跳过，保持纯文本）
+    if (!opts.compact && (text.includes('关：') || text.includes('⚠️') || text.includes('**'))) {
+      const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      let formatted = esc(text);
+      // "关：" / "⚠️" 前自动断段（除非已经在开头）
+      formatted = formatted.replace(/(?!^)(关：)/g, '\n\n$1');
+      formatted = formatted.replace(/(?!^)(⚠️)/g, '\n\n$1');
+      // "开：" / "关：" 用 accent 加粗
+      formatted = formatted.replace(/(开：|关：)/g, '<strong>$1</strong>');
+      // Markdown 风 **bold** → <strong>，正常加粗（白色）
+      formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+      tip.innerHTML = formatted;
+    } else {
+      tip.textContent = text;
+    }
+    tip.className = 'float-tip';
+    if (opts.compact) tip.classList.add('compact');
+    tip.style.left = '0px';
+    tip.style.top = '0px';
+    tip.style.opacity = '0';
+    tip.classList.add('visible');
+    const r = target.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    const margin = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let x, y, side;
+    if (opts.pos === 'below') {
+      side = 'below';
+      x = r.left + r.width / 2 - tipRect.width / 2;
+      y = r.bottom + margin;
+      if (y + tipRect.height > vh - 8) y = r.top - tipRect.height - margin;
+      x = Math.max(8, Math.min(x, vw - tipRect.width - 8));
+    } else {
+      const placeRight = (r.right + margin + tipRect.width + 8) <= vw;
+      if (placeRight) {
+        x = r.right + margin;
+        side = 'right';
+      } else {
+        x = r.left - margin - tipRect.width;
+        side = 'left';
+      }
+      y = r.top + r.height / 2 - tipRect.height / 2;
+      y = Math.max(8, Math.min(y, vh - tipRect.height - 8));
+    }
+
+    // 横向也要 clamp 进视口，绝对不允许超出右边
+    x = Math.max(8, Math.min(x, vw - tipRect.width - 8));
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+    tip.classList.add(side);
+    tip.style.opacity = '';
+  }
+  function hide() {
+    tip.classList.remove('visible', 'right', 'left', 'below', 'compact');
+  }
+  // ? icons
+  document.querySelectorAll('.ctrl-info[data-tip]').forEach(icon => {
+    icon.addEventListener('mouseenter', () => show(icon, icon.dataset.tip));
+    icon.addEventListener('mouseleave', hide);
+  });
+  // preset chips → 显示 mm 值（下方紧凑 tip）
+  document.querySelectorAll('.preset-chip[data-mm]').forEach(chip => {
+    chip.addEventListener('mouseenter', () => show(chip, chip.dataset.mm + ' mm 长边', { pos: 'below', compact: true }));
+    chip.addEventListener('mouseleave', hide);
+  });
+  document.addEventListener('scroll', hide, true);
+})();
+
+// =================== Sync sidebar top to topbar height ===================
+(function() {
+  const tb = document.querySelector('.topbar-sticky');
+  const sb = document.querySelector('.sidebar');
+  if (!tb || !sb) return;
+  function syncSidebar() {
+    const h = tb.getBoundingClientRect().height;
+    sb.style.top = h + 'px';
+    sb.style.height = `calc(100vh - ${h}px)`;
+  }
+  syncSidebar();
+  window.addEventListener('resize', syncSidebar);
+  if (window.ResizeObserver) new ResizeObserver(syncSidebar).observe(tb);
+})();
+
+// =================== Text-edit mode ===================
+// 给页面上常见的文字元素分配 data-edit-key（按文档顺序），用户点 📝 TEXT 进入编辑模式，
+// 改动 localStorage 自动存。
+(function() {
+  const STORAGE_KEY = 'vc_text_overrides';
+  const SELECTORS = [
+    'h1', '.author-badge',
+    '.tabs .tab',
+    '.ctrl .ctrl-name',
+    '.ctrl-check .ctrl-name',
+    '.ctrl-check .ctrl-reminder',
+    '.ctrl-unit',
+    '.sidebar-hint .hint-text',
+    '.preset-chip',
+    '.card-head h3',
+    '.card > h3',
+    '.card .desc',
+    '.warning-banner',
+    '.info',
+    '.info b',
+    '.section-label, h3[style]',     /* 3-shares ① ② ③ 小节标题 */
+    '.file-mini-label',
+    '.ctrl-sub-check',
+    '.action-row > button, .ctrl-actions > button',
+    '.sidebar-actions button',
+  ];
+
+  // 1. 给所有候选元素打上 data-edit-key（按文档顺序稳定生成）
+  let counter = 0;
+  document.querySelectorAll(SELECTORS.join(',')).forEach(el => {
+    // 跳过含子元素（除了纯 text + b/code/br/span）的，避免破坏结构
+    // 简单策略：允许元素有子节点，但 contenteditable 时建议只在叶子节点编辑
+    if (!el.dataset.editKey) {
+      el.dataset.editKey = 'te-' + (counter++);
+    }
+  });
+
+  // 2. 从 localStorage 恢复
+  function loadOverrides() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch (e) { return {}; }
+  }
+  function saveOverrides(map) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); }
+    catch (e) {}
+  }
+  const overrides = loadOverrides();
+  Object.entries(overrides).forEach(([key, text]) => {
+    const el = document.querySelector(`[data-edit-key="${key}"]`);
+    // 只覆盖纯文本（无 HTML 子节点）的元素，避免破坏含 b/code 的结构
+    if (el && (el.children.length === 0 || el.querySelectorAll('*').length === 0)) {
+      el.textContent = text;
+    }
+  });
+
+  // 3. Toggle 按钮
+  const btn = document.getElementById('textEditBtn');
+  const panel = document.getElementById('tePanel');
+  const exportBtn = document.getElementById('teExportBtn');
+  const resetBtn = document.getElementById('teResetBtn');
+  const snapshot = document.getElementById('teSnapshot');
+
+  function enableEdit() {
+    document.body.classList.add('text-edit-mode');
+    btn.classList.add('active');
+    panel.classList.add('show');
+    // 把每个 [data-edit-key] 设成 contenteditable
+    document.querySelectorAll('[data-edit-key]').forEach(el => {
+      // 跳过含复杂子结构的（h1 / .info 含 b/code 的）
+      const hasComplexChildren = el.querySelector('ul, code, br, b, i') !== null;
+      if (hasComplexChildren && el.matches('.info, .warning-banner')) {
+        // 大块文字暂不开 contenteditable，避免编辑破坏 HTML
+        return;
+      }
+      el.setAttribute('contenteditable', 'plaintext-only');
+      el.spellcheck = false;
+    });
+  }
+
+  function disableEdit() {
+    document.body.classList.remove('text-edit-mode');
+    btn.classList.remove('active');
+    panel.classList.remove('show');
+    document.querySelectorAll('[data-edit-key][contenteditable]').forEach(el => {
+      el.removeAttribute('contenteditable');
+    });
+  }
+
+  btn.addEventListener('click', () => {
+    if (document.body.classList.contains('text-edit-mode')) disableEdit();
+    else enableEdit();
+  });
+
+  // 监听编辑：用事件委托捕获所有 contenteditable 元素的 input 事件
+  document.addEventListener('input', (e) => {
+    const el = e.target.closest('[data-edit-key][contenteditable]');
+    if (!el) return;
+    const key = el.dataset.editKey;
+    const map = loadOverrides();
+    const original = el.dataset.originalText !== undefined ? el.dataset.originalText : null;
+    // 首次编辑时记录原始文字（用于 reset）
+    if (original === null) {
+      el.dataset.originalText = el.textContent;
+    }
+    map[key] = el.textContent;
+    saveOverrides(map);
+  });
+
+  // 防止 Enter 换行（plaintext-only 不一定生效）
+  document.addEventListener('keydown', (e) => {
+    if (!document.body.classList.contains('text-edit-mode')) return;
+    const el = e.target.closest('[data-edit-key][contenteditable]');
+    if (!el) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      el.blur();
+    }
+  });
+
+  // Export snapshot
+  exportBtn.addEventListener('click', () => {
+    const map = loadOverrides();
+    const text = JSON.stringify(map, null, 2);
+    snapshot.textContent = text;
+    snapshot.classList.add('show');
+    try {
+      navigator.clipboard.writeText(text);
+      exportBtn.textContent = '✓ 复制到剪贴板了!';
+      setTimeout(() => exportBtn.textContent = '📋 复制所有改动 JSON', 1500);
+    } catch (e) {}
+  });
+
+  // Reset
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('清空所有文字改动，恢复原文？')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  });
+})();
 
 // =================== Utilities ===================
 function hideEmpty(id) { const e = document.getElementById(id); if (e) e.style.display = 'none'; }
@@ -587,7 +2634,7 @@ function orOverlay(...imgs) {
   return out;
 }
 // 从 Image 元素得到二值数组（0=白，1=黑），同时输出预览
-function toBinary(image, threshold, targetW, targetH) {
+function toBinary(image, threshold, targetW, targetH, useDither = false) {
   const c = document.createElement('canvas');
   c.width = targetW; c.height = targetH;
   const ctx = c.getContext('2d');
@@ -599,15 +2646,27 @@ function toBinary(image, threshold, targetW, targetH) {
   if (ar > targetW / targetH) { dh = Math.round(targetW / ar); } else { dw = Math.round(targetH * ar); }
   ctx.drawImage(image, (targetW - dw) / 2, (targetH - dh) / 2, dw, dh);
   const data = ctx.getImageData(0, 0, targetW, targetH).data;
-  const bin = new Uint8Array(targetW * targetH);
-  const preview = new ImageData(targetW, targetH);
+  // 先把 RGBA 转灰度
+  const gray = new Float32Array(targetW * targetH);
   for (let i = 0, j = 0; i < data.length; i += 4, j++) {
     const lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
     const a = data[i+3] / 255;
-    const eff = lum * a + 255 * (1 - a);
-    const isBlack = eff < threshold ? 1 : 0;
-    bin[j] = isBlack;
-    const v = isBlack ? 0 : 255;
+    gray[j] = lum * a + 255 * (1 - a);
+  }
+  let bin;
+  if (useDither) {
+    // FS 误差扩散：threshold 当 tone bias 用
+    bin = fsHalftone(gray, targetW, targetH, threshold);
+  } else {
+    // 简单阈值
+    bin = new Uint8Array(targetW * targetH);
+    for (let j = 0; j < gray.length; j++) {
+      bin[j] = gray[j] < threshold ? 1 : 0;
+    }
+  }
+  const preview = new ImageData(targetW, targetH);
+  for (let j = 0, i = 0; j < bin.length; j++, i += 4) {
+    const v = bin[j] ? 0 : 255;
     preview.data[i] = preview.data[i+1] = preview.data[i+2] = v;
     preview.data[i+3] = 255;
   }
@@ -648,8 +2707,8 @@ let basicImage = null;
 const basicFile = document.getElementById('basicFile');
 const basicGenBtn = document.getElementById('basicGenBtn');
 const basicPrintAllBtn = document.getElementById('basicPrintAllBtn');
-const basicDemoBtn = document.getElementById('basicDemoBtn');
 const basicThreshold = document.getElementById('basicThreshold');
+const basicDither = document.getElementById('basicDither');
 const basicScale = document.getElementById('basicScale');
 const basicRes = document.getElementById('basicRes');
 const basicPrintMm = document.getElementById('basicPrintMm');
@@ -673,18 +2732,6 @@ function loadBasicDemo(makeDataUrl) {
   img.onload = () => { basicImage = img; basicGenBtn.disabled = false; basicPrintAllBtn.disabled = false; updateBasicSizeHint(); renderBasic(); };
   img.src = makeDataUrl();
 }
-basicDemoBtn.addEventListener('click', () => {
-  loadBasicDemo(() => {
-    const c = document.createElement('canvas');
-    c.width = 200; c.height = 80;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-    ctx.fillStyle = '#000'; ctx.font = 'bold 56px sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('密 SECRET', c.width / 2, c.height / 2);
-    return c.toDataURL();
-  });
-});
 document.getElementById('basicDemoBtn2').addEventListener('click', () => {
   loadBasicDemo(() => {
     const c = document.createElement('canvas');
@@ -694,30 +2741,6 @@ document.getElementById('basicDemoBtn2').addEventListener('click', () => {
     ctx.fillStyle = '#000'; ctx.font = 'bold 110px sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('♥', 60, 65);
-    return c.toDataURL();
-  });
-});
-document.getElementById('basicDemoBtn3').addEventListener('click', () => {
-  loadBasicDemo(() => {
-    // 类似 QR 码风格的图标 - 三个定位角 + 中间符号
-    const c = document.createElement('canvas');
-    c.width = 140; c.height = 140;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-    ctx.fillStyle = '#000';
-    // 三个定位角（QR 风格）
-    const corner = (cx, cy) => {
-      ctx.fillRect(cx, cy, 30, 30);
-      ctx.fillStyle = '#fff'; ctx.fillRect(cx + 5, cy + 5, 20, 20);
-      ctx.fillStyle = '#000'; ctx.fillRect(cx + 10, cy + 10, 10, 10);
-    };
-    corner(10, 10); corner(100, 10); corner(10, 100);
-    // 中间随机黑块（模拟 QR 数据）
-    for (let i = 0; i < 60; i++) {
-      const x = 45 + Math.floor(Math.random() * 60);
-      const y = 45 + Math.floor(Math.random() * 60);
-      ctx.fillRect(x, y, 6, 6);
-    }
     return c.toDataURL();
   });
 });
@@ -737,8 +2760,8 @@ function updateBasicSizeHint() {
     if (ar >= 1) ph = Math.round(share / ar);
     else pw = Math.round(share * ar);
   }
-  document.getElementById('basicShareSizeText').textContent = `${pw} × ${ph} px`;
-  document.getElementById('basicPrintSizeText').textContent = `${pxToMm(pw)} × ${pxToMm(ph)} mm`;
+  document.getElementById('basicShareSizeText').textContent = `${pw}×${ph} px`;
+  document.getElementById('basicPrintSizeText').textContent = `${pxToMm(pw)}×${pxToMm(ph)} mm`;
   document.getElementById('basicExportMmText').textContent = `${basicPrintMm.value}mm`;
 }
 
@@ -761,13 +2784,14 @@ document.querySelectorAll('[data-basic-preset]').forEach(btn => {
 
 [basicThreshold, basicScale, basicRes, basicPrintMm].forEach(el => el.addEventListener('input', () => {
   basicThresholdVal.textContent = basicThreshold.value;
-  basicScaleVal.textContent = basicScale.value;
+  basicScaleVal.textContent = scaleToMm(basicScale.value);
   basicResVal.textContent = basicRes.value;
   basicPrintMmVal.textContent = basicPrintMm.value;
   updateBasicSizeHint();
   highlightBasicPreset();
 }));
 basicThreshold.addEventListener('change', () => basicImage && renderBasic());
+basicDither.addEventListener('change', () => basicImage && renderBasic());
 basicScale.addEventListener('change', () => basicImage && renderBasic());
 basicRes.addEventListener('change', () => basicImage && renderBasic());
 basicGenBtn.addEventListener('click', () => basicImage && renderBasic());
@@ -793,7 +2817,8 @@ document.getElementById('basicPrintAllBtn').addEventListener('click', () => {
   btn.textContent = '渲染中…';
   setTimeout(() => {
     try {
-      const { bin } = toBinary(basicImage, thr, w, h);
+      const useDither = basicDither.checked;
+      const { bin } = toBinary(basicImage, thr, w, h, useDither);
       const { s1, s2, W, H } = generateBasicShares(bin, w, h, scale);
       const tag = includeRegMarks ? '_withmarks' : '';
       [['s1', s1], ['s2', s2]].forEach(([which, imgData], i) => {
@@ -825,12 +2850,13 @@ document.getElementById('basicPrintAllBtn').addEventListener('click', () => {
 function renderBasic() {
   if (!basicImage) return;
   const thr = parseInt(basicThreshold.value, 10);
+  const useDither = basicDither.checked;
   const scale = parseInt(basicScale.value, 10);
   const maxSize = parseInt(basicRes.value, 10);
   const ratio = Math.min(1, maxSize / Math.max(basicImage.width, basicImage.height));
   const w = Math.max(1, Math.round(basicImage.width * ratio));
   const h = Math.max(1, Math.round(basicImage.height * ratio));
-  const { bin, preview } = toBinary(basicImage, thr, w, h);
+  const { bin, preview } = toBinary(basicImage, thr, w, h, useDither);
   const { s1, s2, W, H } = generateBasicShares(bin, w, h, scale);
   // 原图预览放大到 share 尺寸（像素完美）
   basicOrig.width = W; basicOrig.height = H;
@@ -1051,8 +3077,8 @@ function updateColorSizeHint() {
     if (ar >= 1) ph = Math.round(share / ar);
     else pw = Math.round(share * ar);
   }
-  document.getElementById('colorShareSizeText').textContent = `${pw} × ${ph} px`;
-  document.getElementById('colorPrintSizeText').textContent = `${pxToMm(pw)} × ${pxToMm(ph)} mm`;
+  document.getElementById('colorShareSizeText').textContent = `${pw}×${ph} px`;
+  document.getElementById('colorPrintSizeText').textContent = `${pxToMm(pw)}×${pxToMm(ph)} mm`;
   document.getElementById('colorExportMmText').textContent = `${colorPrintMm.value}mm`;
 }
 
@@ -1074,7 +3100,7 @@ document.querySelectorAll('[data-color-preset]').forEach(btn => {
 
 [colorThreshold, colorScale, colorRes, colorExposure, colorPrintMm].forEach(el => el.addEventListener('input', () => {
   colorThresholdVal.textContent = colorThreshold.value;
-  colorScaleVal.textContent = colorScale.value;
+  colorScaleVal.textContent = scaleToMm(colorScale.value);
   colorResVal.textContent = colorRes.value;
   colorExposureVal.textContent = colorExposure.value;
   colorPrintMmVal.textContent = colorPrintMm.value;
@@ -1085,7 +3111,15 @@ colorThreshold.addEventListener('change', () => colorImage && renderColor());
 colorScale.addEventListener('change', () => colorImage && renderColor());
 colorRes.addEventListener('change', () => colorImage && renderColor());
 colorExposure.addEventListener('change', () => colorImage && renderColor());
-colorDither.addEventListener('change', () => colorImage && renderColor());
+colorDither.addEventListener('change', () => { updateThresholdState(); colorImage && renderColor(); });
+
+// Bayer 抖动开启时禁用二值化阈值这一行
+function updateThresholdState() {
+  const row = document.getElementById('colorThresholdRow');
+  if (!row) return;
+  row.classList.toggle('ctrl-disabled', colorDither.checked);
+}
+updateThresholdState();
 colorGenBtn.addEventListener('click', () => colorImage && renderColor());
 updateColorSizeHint();
 highlightColorPreset();
@@ -1207,14 +3241,15 @@ function imageToGray(image, w, h) {
 }
 
 // Floyd-Steinberg 误差扩散，输入灰度 0..255，输出 Uint8Array 1=黑墨/0=白纸
-function fsHalftone(gray, w, h) {
+// threshold（默认 128）= 判断点，低 → 更多黑，高 → 更多白（色调偏移）
+function fsHalftone(gray, w, h, threshold = 128) {
   const buf = new Float32Array(gray); // 复制以便累加误差
   const out = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const idx = y * w + x;
       const old = buf[idx];
-      const newVal = old < 128 ? 0 : 255;
+      const newVal = old < threshold ? 0 : 255;
       out[idx] = newVal === 0 ? 1 : 0;
       const err = old - newVal;
       if (x + 1 < w) buf[idx + 1] += err * 7 / 16;
@@ -1226,6 +3261,20 @@ function fsHalftone(gray, w, h) {
     }
   }
   return out;
+}
+
+// 纯硬阈值二值化（不做误差扩散）
+function hardThreshold(gray, w, h, threshold = 128) {
+  const out = new Uint8Array(w * h);
+  for (let i = 0; i < gray.length; i++) {
+    out[i] = gray[i] < threshold ? 1 : 0;
+  }
+  return out;
+}
+
+// 一站式：根据 useDither 选 FS 或硬阈值
+function binarizeGray(gray, w, h, threshold = 128, useDither = true) {
+  return useDither ? fsHalftone(gray, w, h, threshold) : hardThreshold(gray, w, h, threshold);
 }
 
 // 把二值半色调位图渲染为黑/白 ImageData
@@ -1242,12 +3291,12 @@ function htBitmapToImageData(bits, W, H) {
 // 主算法：3-share / 3-secret 半色调 VC（无需 cover；用随机 50% 噪声作为隐式 cover）
 // 输入: 3 张 secret Image, w/h(粗分辨率=秘密像素), side, K
 // 输出: 3 张 share 二值位图, 3 对叠加
-function generateHalftone3Shares(s12Img, s13Img, s23Img, w, h, side, K) {
+function generateHalftone3Shares(s12Img, s13Img, s23Img, w, h, side, K, threshold = 128, useDither = true) {
   const W = w * side, H = h * side;
   // Secret 在 coarse 分辨率半色调
-  const s12 = fsHalftone(imageToGray(s12Img, w, h), w, h);
-  const s13 = fsHalftone(imageToGray(s13Img, w, h), w, h);
-  const s23 = fsHalftone(imageToGray(s23Img, w, h), w, h);
+  const s12 = binarizeGray(imageToGray(s12Img, w, h), w, h, threshold, useDither);
+  const s13 = binarizeGray(imageToGray(s13Img, w, h), w, h, threshold, useDither);
+  const s23 = binarizeGray(imageToGray(s23Img, w, h), w, h, threshold, useDither);
 
   const share1 = new Uint8Array(W * H);
   const share2 = new Uint8Array(W * H);
@@ -1388,10 +3437,15 @@ const htImages = { s12: null, s13: null, s23: null };
 const htSide = document.getElementById('htSide');
 const htK = document.getElementById('htK');
 const htRes = document.getElementById('htRes');
+const htDither = document.getElementById('htDither');
+const htThreshold = document.getElementById('htThreshold');
+const htScale = document.getElementById('htScale');
 const htPrintMm = document.getElementById('htPrintMm');
 const htSideVal = document.getElementById('htSideVal');
 const htKVal = document.getElementById('htKVal');
 const htResVal = document.getElementById('htResVal');
+const htThresholdVal = document.getElementById('htThresholdVal');
+const htScaleVal = document.getElementById('htScaleVal');
 const htPrintMmVal = document.getElementById('htPrintMmVal');
 const htGenBtn = document.getElementById('htGenBtn');
 const htDemoBtn = document.getElementById('htDemoBtn');
@@ -1404,7 +3458,7 @@ function updateHtParamInfo() {
   htK.max = Kmax;
   if (K > Kmax) { K = Kmax; htK.value = K; htKVal.textContent = K; }
   const contrastPct = (K / (N*N) * 100).toFixed(1);
-  htParamInfo.textContent = `单 pair 信号对比 ${contrastPct}%（K_max = ${Kmax}）`;
+  if (htParamInfo) htParamInfo.textContent = `📊 单 pair 信号对比 ${contrastPct}%（K_max = ${Kmax}）`;
 }
 
 // 取第一张已上传秘密的比例，没有就默认方形
@@ -1418,15 +3472,16 @@ function htAspect() {
 function updateHtSizeHint() {
   const res = parseInt(htRes.value, 10);
   const N = parseInt(htSide.value, 10);
+  const scale = parseInt(htScale.value, 10);
   const ar = htAspect();
   // res = 输入长边；短边按比例算
   let wIn = res, hIn = res;
   if (ar >= 1) hIn = Math.round(res / ar);
   else         wIn = Math.round(res * ar);
-  const W = wIn * N, H = hIn * N;
-  document.getElementById('htShareSizeText').textContent = `${W} × ${H} px`;
-  document.getElementById('htPrintSizeText').textContent = `${pxToMm(W)} × ${pxToMm(H)} mm`;
-  document.getElementById('htExportMmText').textContent = `${htPrintMm.value}mm 长边`;
+  const W = wIn * N * scale, H = hIn * N * scale;
+  document.getElementById('htShareSizeText').textContent = `${W}×${H} px`;
+  document.getElementById('htPrintSizeText').textContent = `${pxToMm(W)}×${pxToMm(H)} mm`;
+  document.getElementById('htExportMmText').textContent = `${htPrintMm.value}mm`;
 }
 
 function highlightHtPreset() {
@@ -1445,16 +3500,22 @@ document.querySelectorAll('[data-ht-preset]').forEach(btn => {
   });
 });
 
-[htSide, htK, htRes, htPrintMm].forEach(el => el.addEventListener('input', () => {
+[htSide, htK, htRes, htThreshold, htScale, htPrintMm].forEach(el => el.addEventListener('input', () => {
   htSideVal.textContent = htSide.value;
   htKVal.textContent = htK.value;
   htResVal.textContent = htRes.value;
+  htThresholdVal.textContent = htThreshold.value;
+  htScaleVal.textContent = scaleToMm(htScale.value);
   htPrintMmVal.textContent = htPrintMm.value;
   updateHtParamInfo();
   updateHtSizeHint();
   highlightHtPreset();
 }));
-[htSide, htK, htRes].forEach(el => el.addEventListener('change', () => renderHt()));
+[htSide, htK, htRes, htThreshold, htScale].forEach(el => el.addEventListener('change', () => renderHt()));
+htDither.addEventListener('change', () => {
+  // 关掉 FS 时阈值仍然有效（变成硬阈值切分点），保持可调
+  renderHt();
+});
 htGenBtn.addEventListener('click', () => renderHt());
 updateHtParamInfo();
 updateHtSizeHint();
@@ -1483,7 +3544,7 @@ function checkHtReady() {
     htGenBtn.textContent = `已上传 ${uploaded}/3 — 再上传 ${3 - uploaded} 张`;
   } else {
     htGenBtn.disabled = false;
-    htGenBtn.textContent = '生成 3 张 Shares';
+    htGenBtn.textContent = '重新生成 3 张 Shares';
   }
   const printAllBtn = document.getElementById('htPrintAllBtn');
   if (printAllBtn) printAllBtn.disabled = !allReady;
@@ -1515,6 +3576,9 @@ htDemoBtn.addEventListener('click', () => {
 function renderHt() {
   const side = parseInt(htSide.value, 10);
   const res = parseInt(htRes.value, 10);
+  const threshold = parseInt(htThreshold.value, 10);
+  const useDither = htDither.checked;
+  const scale = parseInt(htScale.value, 10);
   // 用第一张已上传秘密的比例（mm 长边对应 res，短边按比例缩）
   const ar = htAspect();
   let w = res, h = res;
@@ -1530,8 +3594,8 @@ function renderHt() {
   for (const key in secretMap) {
     if (!htImages[key]) continue;
     const gray = imageToGray(htImages[key], w, h);
-    const bits = fsHalftone(gray, w, h);
-    drawBitsToCanvas(document.getElementById(secretMap[key].canvas), bits, w, h, side, false);
+    const bits = binarizeGray(gray, w, h, threshold, useDither);
+    drawBitsToCanvas(document.getElementById(secretMap[key].canvas), bits, w, h, side * scale, false);
     hideEmpty(secretMap[key].empty);
   }
 
@@ -1540,18 +3604,18 @@ function renderHt() {
   const K = parseInt(htK.value, 10);
   const result = generateHalftone3Shares(
     htImages.s12, htImages.s13, htImages.s23,
-    w, h, side, K
+    w, h, side, K, threshold, useDither
   );
   const W = result.W, H = result.H;
 
-  // Shares
-  drawBitsToCanvas(document.getElementById('htShare1'), result.share1, W, H, 1, false);
-  drawBitsToCanvas(document.getElementById('htShare2'), result.share2, W, H, 1, false);
-  drawBitsToCanvas(document.getElementById('htShare3'), result.share3, W, H, 1, false);
+  // Shares（drawBitsToCanvas 的 scale 把 share 像素再放大 htScale 倍）
+  drawBitsToCanvas(document.getElementById('htShare1'), result.share1, W, H, scale, false);
+  drawBitsToCanvas(document.getElementById('htShare2'), result.share2, W, H, scale, false);
+  drawBitsToCanvas(document.getElementById('htShare3'), result.share3, W, H, scale, false);
   // 叠加
-  drawBitsToCanvas(document.getElementById('htOv12'), result.ov12, W, H, 1, false);
-  drawBitsToCanvas(document.getElementById('htOv13'), result.ov13, W, H, 1, false);
-  drawBitsToCanvas(document.getElementById('htOv23'), result.ov23, W, H, 1, false);
+  drawBitsToCanvas(document.getElementById('htOv12'), result.ov12, W, H, scale, false);
+  drawBitsToCanvas(document.getElementById('htOv13'), result.ov13, W, H, scale, false);
+  drawBitsToCanvas(document.getElementById('htOv23'), result.ov23, W, H, scale, false);
   ['htShare1Empty','htShare2Empty','htShare3Empty','htOv12Empty','htOv13Empty','htOv23Empty'].forEach(hideEmpty);
 
   window.__htCache = result;
@@ -1573,12 +3637,16 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
   if (!(htImages.s12 && htImages.s13 && htImages.s23)) return;
   const side = parseInt(htSide.value, 10);
   const K = parseInt(htK.value, 10);
+  const threshold = parseInt(htThreshold.value, 10);
+  const useDither = htDither.checked;
+  const scale = parseInt(htScale.value, 10);
   const printMm = parseInt(htPrintMm.value, 10);
   const includeRegMarks = document.getElementById('htRegMark').checked;
   const targetLongPx = mmToPx(printMm);
   // mm = 长边，短边按第一张秘密的比例缩
+  // 输入长边 × side × scale = targetLongPx，所以 longInput = targetLongPx / (side × scale)
   const ar = htAspect();
-  let longInput = Math.max(20, Math.round(targetLongPx / side));
+  let longInput = Math.max(20, Math.round(targetLongPx / (side * scale)));
   let w, h;
   if (ar >= 1) { w = longInput; h = Math.max(20, Math.round(w / ar)); }
   else        { h = longInput; w = Math.max(20, Math.round(h * ar)); }
@@ -1591,7 +3659,7 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
       // 只跑一次算法 → 3 张 share 来自同一组 SEP + 噪声
       const result = generateHalftone3Shares(
         htImages.s12, htImages.s13, htImages.s23,
-        w, h, side, K
+        w, h, side, K, threshold, useDither
       );
       const tag = includeRegMarks ? '_withmarks' : '';
       const shares = [
@@ -1602,7 +3670,7 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
       shares.forEach(([which, bits], i) => {
         setTimeout(() => {
           const tempCanvas = document.createElement('canvas');
-          drawBitsToCanvas(tempCanvas, bits, result.W, result.H, 1, includeRegMarks, true);
+          drawBitsToCanvas(tempCanvas, bits, result.W, result.H, scale, includeRegMarks, true);
           const a = document.createElement('a');
           a.href = tempCanvas.toDataURL('image/png');
           a.download = `halftone3_${which}_${printMm}mm_300dpi${tag}.png`;
