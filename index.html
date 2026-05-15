@@ -642,11 +642,11 @@
     min-height: var(--card-canvas-min);
     max-height: var(--card-canvas-max);
   }
-  /* 3-shares 用 grid-3，秘密图和叠加保持方形 */
+  /* 3-shares 用 grid-3，画布也撑满卡片宽度（不强制方形） */
   .grid-3 .canvas-wrap {
-    aspect-ratio: 1;
-    min-height: 0;
-    max-height: none;
+    aspect-ratio: auto;
+    min-height: var(--card-canvas-min);
+    max-height: var(--card-canvas-max);
   }
   canvas { display: block; max-width: 100%; max-height: 100%; image-rendering: pixelated; }
   .card .actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
@@ -682,12 +682,38 @@
   .info ul { margin-block: 6px; }
 
   .empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     color: var(--text-faint);
-    font-size: 11px;
+    font-size: 16px;
     padding: 24px;
     text-align: center;
     font-family: ui-monospace, "SF Mono", monospace;
     letter-spacing: 0.02em;
+    line-height: 1.6;
+    pointer-events: none;
+    width: 80%;
+    transition: color 0.2s;
+  }
+  /* Drop zone: 鼠标移上去高亮 + 拖拽过来时强高亮 */
+  .canvas-wrap.drop-zone { cursor: pointer; }
+  .canvas-wrap.drop-zone:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 3%, var(--canvas-bg));
+  }
+  .canvas-wrap.drop-zone:hover .empty {
+    color: var(--accent);
+  }
+  .canvas-wrap.drop-zone.drag-over {
+    border-color: var(--accent);
+    border-style: dashed;
+    background: var(--accent-tint);
+  }
+  .canvas-wrap.drop-zone.drag-over .empty {
+    color: var(--accent);
+    transform: translate(-50%, -50%) scale(1.05);
   }
   .value {
     color: var(--accent);
@@ -1452,8 +1478,7 @@
      - 主区放不下（≤ 1200px）：直接整体塌成单列，避免 2 列出现孤儿卡或挤压
      - 真正窄（< 720px）：sidebar 也挪到顶部
   */
-  /* 3-shares 卡片高度封顶，避免单列时 aspect-ratio:1 把卡片撑得太高 */
-  .grid-3 .canvas-wrap { max-height: 280px; }
+  /* (移除：之前为防止 aspect-ratio:1 撑太高加的 max-height 280，现在 aspect-ratio:auto 不需要) */
 
   @media (max-width: 1200px) {
     .grid-2 { grid-template-columns: 1fr; }
@@ -1569,7 +1594,7 @@
           </label>
         </div>
         <div class="desc">黑色=要隐藏的内容</div>
-        <div class="canvas-wrap"><canvas id="basicOrig"></canvas><div class="empty" id="basicOrigEmpty">先上传图片</div></div>
+        <div class="canvas-wrap"><canvas id="basicOrig"></canvas><div class="empty" id="basicOrigEmpty">📁 点击或拖拽图片到此<br>开始加密</div></div>
       </div>
       <div class="card">
         <h3>叠加结果预览 S1 + S2</h3>
@@ -1694,7 +1719,7 @@
           </label>
         </div>
         <div class="desc">CMYK 四通道分别加密（4 套 2-out-of-2）</div>
-        <div class="canvas-wrap"><canvas id="colorOrig"></canvas><div class="empty" id="colorOrigEmpty">先上传彩色图</div></div>
+        <div class="canvas-wrap"><canvas id="colorOrig"></canvas><div class="empty" id="colorOrigEmpty">📁 点击或拖拽图片到此<br>开始加密</div></div>
       </div>
       <div class="card">
         <h3>叠加结果预览 S1 + S2</h3>
@@ -1817,7 +1842,7 @@
           </label>
         </div>
         <div class="desc">叠加 Share 1 + Share 2 时显形</div>
-        <div class="canvas-wrap"><canvas id="htS12"></canvas><div class="empty" id="htS12Empty">上传图片</div></div>
+        <div class="canvas-wrap"><canvas id="htS12"></canvas><div class="empty" id="htS12Empty">📁 点击或拖拽<br>上传图片</div></div>
       </div>
       <div class="card">
         <div class="card-head">
@@ -1828,7 +1853,7 @@
           </label>
         </div>
         <div class="desc">叠加 Share 1 + Share 3 时显形</div>
-        <div class="canvas-wrap"><canvas id="htS13"></canvas><div class="empty" id="htS13Empty">上传图片</div></div>
+        <div class="canvas-wrap"><canvas id="htS13"></canvas><div class="empty" id="htS13Empty">📁 点击或拖拽<br>上传图片</div></div>
       </div>
       <div class="card">
         <div class="card-head">
@@ -1839,7 +1864,7 @@
           </label>
         </div>
         <div class="desc">叠加 Share 2 + Share 3 时显形</div>
-        <div class="canvas-wrap"><canvas id="htS23"></canvas><div class="empty" id="htS23Empty">上传图片</div></div>
+        <div class="canvas-wrap"><canvas id="htS23"></canvas><div class="empty" id="htS23Empty">📁 点击或拖拽<br>上传图片</div></div>
       </div>
     </div>
 
@@ -2236,6 +2261,48 @@ document.querySelectorAll('.file-mini input[type="file"]').forEach(input => {
       labelSpan.textContent = '📁 选图';
       wrap.classList.remove('has-file');
       wrap.title = '';
+    }
+  });
+});
+
+// =================== Canvas-wrap as drop zone (click + drag-drop upload) ===================
+// 找到每个 .card 里的 file input 和 canvas-wrap，把 canvas-wrap 变成 drop zone
+document.querySelectorAll('.card').forEach(card => {
+  const fileInput = card.querySelector('input[type="file"]');
+  const canvasWrap = card.querySelector('.canvas-wrap');
+  if (!fileInput || !canvasWrap) return;
+
+  canvasWrap.classList.add('drop-zone');
+
+  // 点击 wrap 触发文件选择
+  canvasWrap.addEventListener('click', (e) => {
+    // 编辑文字模式下别拦截
+    if (document.body.classList.contains('text-edit-mode')) return;
+    fileInput.click();
+  });
+
+  // 拖拽
+  canvasWrap.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    canvasWrap.classList.add('drag-over');
+  });
+  canvasWrap.addEventListener('dragleave', (e) => {
+    // 只有真的离开 wrap 才移除（不是 hover 到子元素）
+    if (e.target === canvasWrap) {
+      canvasWrap.classList.remove('drag-over');
+    }
+  });
+  canvasWrap.addEventListener('drop', (e) => {
+    e.preventDefault();
+    canvasWrap.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files && files[0] && files[0].type.startsWith('image/')) {
+      // 用 DataTransfer 转移给 input
+      const dt = new DataTransfer();
+      dt.items.add(files[0]);
+      fileInput.files = dt.files;
+      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
   });
 });
