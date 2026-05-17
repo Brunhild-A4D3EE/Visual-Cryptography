@@ -1232,6 +1232,181 @@
     .sidebar-scroll { max-height: 60vh; }
   }
 
+  /* Phone layout only: desktop/tablet layout above 720px remains unchanged */
+  @media (max-width: 720px) {
+    :root {
+      --body-pad-x: 16px;
+      --card-pad: 14px;
+      --grid-gap: 14px;
+      --card-canvas-min: 180px;
+      --card-canvas-max: 360px;
+      --main-pad-bottom: 28px;
+    }
+
+    html,
+    body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    .topbar-sticky {
+      position: sticky;
+      top: 0;
+    }
+    .page-header {
+      padding: 14px var(--body-pad-x) 10px;
+    }
+    .topbar-sticky .header-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 10px;
+      align-items: center;
+    }
+    .topbar-sticky h1 {
+      grid-column: 1 / -1;
+      font-size: 24px;
+      line-height: 1.12;
+      overflow-wrap: anywhere;
+    }
+    .topbar-sticky .author-badge,
+    .topbar-sticky .theme-toggle {
+      top: 0;
+    }
+    .topbar-sticky .tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 0 var(--body-pad-x);
+    }
+    .topbar-sticky .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      font-size: 13px;
+      padding: 10px 8px;
+    }
+
+    .app {
+      display: block;
+    }
+    .sidebar {
+      position: relative !important;
+      top: auto !important;
+      height: auto !important;
+      max-height: none;
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      overflow: visible;
+    }
+    .sidebar-panel {
+      height: auto;
+      min-height: 0;
+    }
+    .sidebar-panel.active {
+      display: block;
+    }
+    .sidebar-scroll {
+      max-height: none;
+      overflow: visible;
+      padding: 14px var(--body-pad-x) 12px;
+    }
+    .sidebar-actions {
+      position: static;
+      padding: 12px var(--body-pad-x) 14px;
+    }
+
+    .sidebar .controls label.ctrl,
+    .sidebar .controls label.ctrl-check {
+      grid-template-columns: minmax(76px, 0.78fr) minmax(96px, 1fr) 44px 26px 22px;
+      gap: 7px;
+      align-items: center;
+    }
+    .sidebar .controls label.ctrl .ctrl-name,
+    .sidebar .controls label.ctrl-check .ctrl-name {
+      min-width: 0;
+      white-space: normal;
+    }
+    .sidebar .controls label.ctrl input[type="range"] {
+      min-width: 0;
+    }
+    .sidebar .ctrl-presets {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-left: 0;
+    }
+    .sidebar-actions .ctrl-actions {
+      grid-template-columns: 1fr;
+    }
+    .sidebar-actions .ctrl-actions > button:not(.demo-btn),
+    .sidebar-actions .ctrl-actions > .demo-btn,
+    .sidebar-actions .ctrl-actions > .action-group {
+      grid-column: 1;
+    }
+
+    .main {
+      padding: 16px var(--body-pad-x) var(--main-pad-bottom);
+    }
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+      grid-template-columns: 1fr;
+      gap: var(--grid-gap);
+    }
+    .card {
+      min-width: 0;
+    }
+    .card-head {
+      align-items: flex-start;
+    }
+    .file-mini {
+      max-width: 52%;
+      justify-content: center;
+    }
+    .canvas-wrap {
+      min-height: var(--card-canvas-min);
+      max-height: var(--card-canvas-max);
+    }
+    .float-tip {
+      max-width: calc(100vw - 24px);
+    }
+    .gt-panel {
+      left: 12px;
+      right: 12px;
+      bottom: 58px;
+      width: auto;
+    }
+  }
+
+  @media (max-width: 380px) {
+    :root {
+      --body-pad-x: 12px;
+      --card-pad: 12px;
+      --card-canvas-max: 320px;
+    }
+    .topbar-sticky h1 {
+      font-size: 21px;
+    }
+    .tab {
+      font-size: 12px;
+      padding: 9px 7px;
+    }
+    .sidebar .controls label.ctrl,
+    .sidebar .controls label.ctrl-check {
+      grid-template-columns: minmax(68px, 0.72fr) minmax(82px, 1fr) 38px 22px 20px;
+      gap: 6px;
+    }
+    .sidebar .preset-chip {
+      font-size: 11px;
+      padding: 7px 4px;
+    }
+    .file-mini {
+      max-width: 48%;
+      padding-inline: 8px;
+    }
+  }
+
   /* ============================================================
      ✨ MICRO-DELIGHTS — 纯设计层小细节，无功能影响
      ============================================================ */
@@ -2366,6 +2541,11 @@ document.querySelectorAll('.tab').forEach(btn => {
   const sb = document.querySelector('.sidebar');
   if (!tb || !sb) return;
   function syncSidebar() {
+    if (window.matchMedia('(max-width: 720px)').matches) {
+      sb.style.top = '';
+      sb.style.height = '';
+      return;
+    }
     const h = tb.getBoundingClientRect().height;
     sb.style.top = h + 'px';
     sb.style.height = `calc(100vh - ${h}px)`;
@@ -3803,207 +3983,6 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
   ['basicPrintAllBtn', 'colorPrintAllBtn', 'htPrintAllBtn'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', burstAt(1.3));
-  });
-})();
-</script>
-
-<!-- ============ DARK MODE TWEAK PANEL ============ -->
-<style>
-  .dk-toggle {
-    position: fixed;
-    bottom: 18px;
-    right: 18px;
-    z-index: 1000;
-    background: rgba(15,15,15,0.85);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 8px 14px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-family: ui-monospace, monospace;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-  }
-  .dk-toggle:hover { background: rgba(15,15,15,0.95); }
-  .dk-panel {
-    position: fixed;
-    bottom: 64px;
-    right: 18px;
-    z-index: 1000;
-    width: 300px;
-    background: rgba(20,20,22,0.94);
-    color: #eee;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 14px;
-    font-family: ui-monospace, monospace;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: none;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  .dk-panel.open { display: block; }
-  .dk-panel h4 {
-    margin: 12px 0 6px;
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #888;
-    font-weight: 600;
-  }
-  .dk-panel h4:first-child { margin-top: 0; }
-  .dk-row {
-    display: grid;
-    grid-template-columns: 92px 1fr 38px;
-    gap: 8px;
-    align-items: center;
-    padding: 3px 0;
-    font-size: 11px;
-  }
-  .dk-row label { color: #aaa; }
-  .dk-row input[type="range"] {
-    width: 100%;
-    accent-color: var(--accent);
-  }
-  .dk-row input[type="color"] {
-    width: 100%;
-    height: 24px;
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 4px;
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
-  }
-  .dk-row output {
-    text-align: right;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-    font-size: 10px;
-  }
-  .dk-snap {
-    margin-top: 12px;
-    padding: 7px 10px;
-    width: 100%;
-    font-size: 10px;
-    background: var(--accent);
-    color: #000;
-    border: none;
-    border-radius: 6px;
-    font-family: inherit;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  .dk-snap:hover { filter: brightness(1.1); }
-  .dk-out {
-    margin-top: 8px;
-    font-size: 9px;
-    background: rgba(0,0,0,0.4);
-    color: #ccc;
-    padding: 8px;
-    border-radius: 5px;
-    white-space: pre-wrap;
-    max-height: 140px;
-    overflow-y: auto;
-    display: none;
-    border: 1px solid rgba(255,255,255,0.08);
-  }
-  .dk-out.show { display: block; }
-</style>
-
-<button class="dk-toggle" id="dkToggle">🌙 DARK</button>
-<div class="dk-panel" id="dkPanel">
-  <h4>DIVIDERS（分割线）</h4>
-  <div class="dk-row">
-    <label>Tab 下 %</label>
-    <input type="range" min="0" max="40" step="1" value="12" data-dv="--dk-tab-divider">
-    <output>12</output>
-  </div>
-  <div class="dk-row">
-    <label>顶栏底 %</label>
-    <input type="range" min="0" max="40" step="1" value="12" data-dv="--dk-topbar-divider">
-    <output>12</output>
-  </div>
-
-  <h4>CARD SHINE（卡片顶/底高光）</h4>
-  <div class="dk-row">
-    <label>中央峰 %</label>
-    <input type="range" min="0" max="100" step="1" value="19" data-dv="--dk-card-shine">
-    <output>19</output>
-  </div>
-
-  <h4>EMPTY WRAP（上传灰框）</h4>
-  <div class="dk-row">
-    <label>白色 %</label>
-    <input type="range" min="0" max="60" step="1" value="2" data-dv="--dk-wrap-bg">
-    <output>2</output>
-  </div>
-
-  <h4>HOVER 色</h4>
-  <div class="dk-row">
-    <label>主色</label>
-    <input type="color" value="#ff7e38" data-dv="--dk-hover-color">
-    <output>·</output>
-  </div>
-  <div class="dk-row">
-    <label>背景 %</label>
-    <input type="range" min="0" max="50" step="1" value="17" data-dv="--dk-hover-bg">
-    <output>17</output>
-  </div>
-  <div class="dk-row">
-    <label>描边 %</label>
-    <input type="range" min="0" max="100" step="1" value="35" data-dv="--dk-hover-border">
-    <output>35</output>
-  </div>
-  <div class="dk-row">
-    <label>文字色</label>
-    <input type="color" value="#c8a585" data-dv="--dk-hover-text">
-    <output>·</output>
-  </div>
-
-  <button class="dk-snap" id="dkSnap">📋 复制 CSS 快照</button>
-  <pre class="dk-out" id="dkOut"></pre>
-</div>
-
-<script>
-(function() {
-  const toggle = document.getElementById('dkToggle');
-  const panel = document.getElementById('dkPanel');
-  const snapBtn = document.getElementById('dkSnap');
-  const out = document.getElementById('dkOut');
-  toggle.addEventListener('click', () => panel.classList.toggle('open'));
-
-  panel.querySelectorAll('input[data-dv]').forEach(input => {
-    const outEl = input.nextElementSibling;
-    const isColor = input.type === 'color';
-    function apply() {
-      document.documentElement.style.setProperty(input.dataset.dv, input.value);
-      if (!isColor) outEl.textContent = input.value;
-      else outEl.textContent = input.value.replace('#','');
-    }
-    apply();
-    input.addEventListener('input', apply);
-  });
-
-  snapBtn.addEventListener('click', () => {
-    const inputs = panel.querySelectorAll('input[data-dv]');
-    let css = '/* === Dark-mode snapshot === */\n:root {\n';
-    inputs.forEach(input => {
-      css += `  ${input.dataset.dv}: ${input.value};\n`;
-    });
-    css += '}';
-    out.textContent = css;
-    out.classList.add('show');
-    try {
-      navigator.clipboard.writeText(css);
-      snapBtn.textContent = '✓ 已复制';
-      setTimeout(() => snapBtn.textContent = '📋 复制 CSS 快照', 1500);
-    } catch (e) {}
   });
 })();
 </script>
