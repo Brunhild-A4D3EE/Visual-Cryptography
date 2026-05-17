@@ -73,7 +73,6 @@
     --glass-card-opacity: 56;
     --glass-card-blur: 2;
     --glass-card-border: 75;
-    --glass-card-highlight: 45;
     --glass-card-shadow: 4;
     --glass-canvas-opacity: 60;
     --glass-sidebar-top: 100;
@@ -81,7 +80,24 @@
     --glass-sidebar-bot: 38;
     --glass-sidebar-blur: 2;
     --glass-actions-opacity: 0;
-    --lattice-alpha: 27;
+    --lattice-alpha: 52;
+    /* warning-banner + info：和卡片一样可调 */
+    --glass-banner-opacity: 56;
+    --glass-banner-blur: 2;
+    --glass-info-opacity: 69;
+    --glass-info-blur: 2;
+    /* 主区底部留白：默认 56px，可调 */
+    --main-pad-bottom: 56px;
+
+    /* ============ Dark-mode 微调变量（只在 [data-theme="dark"] 里被引用） ============ */
+    --dk-tab-divider: 12;          /* tab 下分割线 白色不透明 % */
+    --dk-topbar-divider: 12;       /* 顶栏底部 border 白色不透明 % */
+    --dk-card-shine: 19;           /* 卡片顶 / 底部高光渐变 中央峰值不透明 %（同时控制 ::before 顶 + ::after 底） */
+    --dk-wrap-bg: 2;               /* 上传灰框 白色不透明 % */
+    --dk-hover-color: #ff7e38;     /* hover 主色 */
+    --dk-hover-bg: 17;             /* hover 背景 不透明 % */
+    --dk-hover-border: 35;         /* hover 内描边 不透明 % */
+    --dk-hover-text: #c8a585;      /* hover 时 .empty 提示文字色 */
   }
   /* 根据主题切对应的 name color */
   :root, [data-theme="dark"] {
@@ -633,6 +649,7 @@
     aspect-ratio: 1;
     position: relative;
     border: none;
+    width: 100%;
   }
   /* basic + CMYK 用 grid-2，画布不强制方形——按图片本身比例显示 */
   .grid-2 .canvas-wrap {
@@ -646,7 +663,21 @@
     min-height: var(--card-canvas-min);
     max-height: var(--card-canvas-max);
   }
-  canvas { display: block; max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+  .canvas-wrap > canvas {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: var(--card-canvas-max);
+    margin: auto;
+    image-rendering: pixelated;
+    position: relative;
+    z-index: 0;
+  }
+  #bg-canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
   .card .actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
   .card .upload-row { margin-bottom: 10px; }
   .card .upload-row input[type="file"] {
@@ -694,14 +725,30 @@
     pointer-events: none;
     width: 80%;
     transition: color 0.2s;
+    z-index: 1;
   }
   /* Drop zone: 鼠标移上去高亮 + 拖拽过来时强高亮 */
   .canvas-wrap.drop-zone { cursor: pointer; }
+  .canvas-wrap.drop-zone::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 2;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent);
+    transition: opacity 0.15s ease;
+  }
   /* 用 !important 强制覆盖 glassmorphism 的 .canvas-wrap 背景 rule */
   .canvas-wrap.drop-zone:hover,
   .canvas-wrap.drop-zone.is-hover {
     background: color-mix(in srgb, var(--accent) 10%, var(--canvas-bg)) !important;
-    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent) !important;
+    box-shadow: none !important;
+  }
+  .canvas-wrap.drop-zone:hover::after,
+  .canvas-wrap.drop-zone.is-hover::after {
+    opacity: 1;
   }
   .canvas-wrap.drop-zone:hover .empty,
   .canvas-wrap.drop-zone.is-hover .empty {
@@ -745,29 +792,6 @@
   }
 
   /* Footer status line */
-  .status-line {
-    margin-top: 32px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-    font-size: 14px;
-    font-family: ui-monospace, "SF Mono", monospace;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .status-line .dot {
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    margin-right: 6px;
-    vertical-align: middle;
-    animation: pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
   /* ============ Mobile ============ */
   @media (max-width: 1100px) {
@@ -810,7 +834,7 @@
     .card h3 { font-size: 12px; }
     .card .desc { font-size: 10px; }
     .info { padding: 12px 14px; font-size: 11px; }
-    .canvas-wrap canvas { width: 100%; height: auto; }
+    .canvas-wrap > canvas { width: auto; height: auto; max-width: 100%; max-height: var(--card-canvas-max); }
   }
   @media (max-width: 380px) {
     body { padding: 12px 8px; }
@@ -1030,7 +1054,7 @@
 
   /* Main */
   .main {
-    padding: 22px var(--body-pad-x) 60px;
+    padding: 22px var(--body-pad-x) var(--main-pad-bottom);
     min-width: 0;
     /* 透明背景让格栅 canvas 透出来 */
     background: transparent;
@@ -1321,8 +1345,9 @@
     -webkit-backdrop-filter: blur(calc(var(--glass-card-blur) * 1px)) saturate(160%);
     backdrop-filter: blur(calc(var(--glass-card-blur) * 1px)) saturate(160%);
     border: 1px solid color-mix(in srgb, var(--border) calc(var(--glass-card-border) * 1%), transparent);
+    /* 之前这里有 inset 0 1px 0 rgba(255,255,255, ...) 的顶部白线高光 —— 已移除
+       （它在白天和黑夜都会出现；现在顶/底高光只由暗色专属的 ::before/::after 控制） */
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, calc(var(--glass-card-highlight) / 100)),
       0 calc(var(--glass-card-shadow) * 1px) calc(var(--glass-card-shadow) * 3px) rgba(0, 0, 0, calc(var(--glass-card-shadow) / 200));
   }
   /* canvas-wrap 也可半透明：让格栅在画布背景里若隐若现 */
@@ -1357,19 +1382,27 @@
     border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   }
 
-  /* CMYK 警告 banner 也磨砂化 */
+  /* CMYK 警告 banner 也磨砂化 —— 跟卡片一致的玻璃质感
+     ⚠️ 用 border-top/right/bottom-color 而不是 border-color shorthand，
+        否则会盖掉 .warning-banner 自己定义的 border-left: 4px solid var(--accent) 橙色装饰条 */
   .warning-banner {
-    background: color-mix(in srgb, var(--bg-elev) 78%, transparent);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
-    backdrop-filter: blur(14px) saturate(140%);
-    border-color: color-mix(in srgb, var(--border) 70%, transparent);
+    background: color-mix(in srgb, var(--bg-elev) calc(var(--glass-banner-opacity) * 1%), transparent);
+    -webkit-backdrop-filter: blur(calc(var(--glass-banner-blur) * 1px)) saturate(140%);
+    backdrop-filter: blur(calc(var(--glass-banner-blur) * 1px)) saturate(140%);
+    border-top-color: color-mix(in srgb, var(--border) 70%, transparent);
+    border-right-color: color-mix(in srgb, var(--border) 70%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent);
+    border-left-color: var(--accent);          /* 显式保留橙色竖条 */
   }
-  /* Info 解释块 */
+  /* Info 解释块 —— 同理保留左侧橙色装饰条 */
   .info {
-    background: color-mix(in srgb, var(--bg-elev) 72%, transparent);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
-    backdrop-filter: blur(16px) saturate(140%);
-    border-color: color-mix(in srgb, var(--border) 70%, transparent);
+    background: color-mix(in srgb, var(--bg-elev) calc(var(--glass-info-opacity) * 1%), transparent);
+    -webkit-backdrop-filter: blur(calc(var(--glass-info-blur) * 1px)) saturate(140%);
+    backdrop-filter: blur(calc(var(--glass-info-blur) * 1px)) saturate(140%);
+    border-top-color: color-mix(in srgb, var(--border) 70%, transparent);
+    border-right-color: color-mix(in srgb, var(--border) 70%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent);
+    border-left-color: var(--accent);
   }
 
   /* file-mini 按钮也用玻璃感 */
@@ -1384,6 +1417,75 @@
     background: color-mix(in srgb, var(--text) 90%, transparent);
     -webkit-backdrop-filter: blur(12px) saturate(150%);
     backdrop-filter: blur(12px) saturate(150%);
+  }
+
+  /* ============================================================
+     🌙 DARK-MODE-ONLY REFINEMENTS
+     仅作用于 [data-theme="dark"]，浅色主题完全不受影响（所有规则都被
+     选择器 scoped 死了，别在这里写不带 [data-theme="dark"] 的规则）
+     ============================================================ */
+
+  /* tab 下面那条分割线：暗色里 #1f1f1f 几乎隐形 → 改成浅白低透明，更明显 */
+  [data-theme="dark"] .tabs {
+    border-bottom-color: rgba(255, 255, 255, calc(var(--dk-tab-divider) / 100));
+  }
+  /* 顶栏底部 border 同步（之前被 glass 覆盖过，再覆盖一层） */
+  [data-theme="dark"] .topbar-sticky {
+    border-bottom-color: rgba(255, 255, 255, calc(var(--dk-topbar-divider) / 100));
+  }
+
+  /* Vercel-style 卡片顶部高光条 —— 横向渐隐白色细线，中间最亮、两侧淡出 */
+  [data-theme="dark"] .card {
+    position: relative;
+  }
+  [data-theme="dark"] .card::before,
+  [data-theme="dark"] .card::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, calc(var(--dk-card-shine) / 100)) 50%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+  [data-theme="dark"] .card::before {
+    top: 0;
+    border-top-left-radius: var(--card-radius);
+    border-top-right-radius: var(--card-radius);
+  }
+  [data-theme="dark"] .card::after {
+    bottom: 0;
+    border-bottom-left-radius: var(--card-radius);
+    border-bottom-right-radius: var(--card-radius);
+  }
+
+  /* 上传区灰框：暗色模式下灰底太突兀 → 改成极淡的白色 wash，几乎融入背景 */
+  [data-theme="dark"] .canvas-wrap {
+    background: rgba(255, 255, 255, calc(var(--dk-wrap-bg) / 100));
+  }
+  /* 透明 PNG 预览在暗色背景上会丢白像素；只给页面预览垫白底，导出仍保持透明 */
+  [data-theme="dark"] .canvas-wrap.has-preview > canvas {
+    background: #fff;
+  }
+
+  /* Drop-zone hover：把亮橘换成可调的灰橘 —— 暗色才换，浅色不变 */
+  [data-theme="dark"] .canvas-wrap.drop-zone:hover,
+  [data-theme="dark"] .canvas-wrap.drop-zone.is-hover {
+    background: color-mix(in srgb, var(--dk-hover-color) calc(var(--dk-hover-bg) * 1%), transparent) !important;
+    box-shadow: none !important;
+  }
+  [data-theme="dark"] .canvas-wrap.drop-zone::after {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dk-hover-color) calc(var(--dk-hover-border) * 1%), transparent);
+  }
+  [data-theme="dark"] .canvas-wrap.drop-zone:hover .empty,
+  [data-theme="dark"] .canvas-wrap.drop-zone.is-hover .empty {
+    color: var(--dk-hover-text);
   }
 
   /* 不支持 backdrop-filter 的浏览器自动 fallback 到不透明色（无问题） */
@@ -1862,10 +1964,6 @@
     </div>
   </div>
 
-  <div class="status-line">
-    <span><span class="dot"></span>VC_PLAYGROUND / v2.0 / no deps</span>
-    <span>NAOR-SHAMIR · 1994 → 2026 · MADE BY SUANOVIL</span>
-  </div>
   </main>
 </div>
 
@@ -1942,8 +2040,6 @@ const HOVER_MIRROR_SELECTOR = [
   '.ctrl-info[data-tip]',
   '.preset-chip',
   '.value[data-slider]',
-  '.gt-toggle',
-  '.gt-snap',
 ].join(',');
 let hoverMirrorEls = new Set();
 
@@ -2319,6 +2415,16 @@ function transparentizeForPreview(imgData) {
   }
   return copy;
 }
+
+function setPreviewCanvasSize(canvas, w, h) {
+  canvas.width = w;
+  canvas.height = h;
+  const wrap = canvas.closest('.canvas-wrap');
+  if (!wrap) return;
+  wrap.classList.add('has-preview');
+  wrap.style.aspectRatio = 'auto';
+  wrap.style.height = Math.min(h, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--card-canvas-max')) || h) + 'px';
+}
 // 从 Image 元素得到二值数组（0=白，1=黑），同时输出预览
 function toBinary(image, threshold, targetW, targetH, useDither = false) {
   const c = document.createElement('canvas');
@@ -2546,7 +2652,7 @@ function renderBasic() {
   const { bin, preview } = toBinary(basicImage, thr, w, h, useDither);
   const { s1, s2, W, H } = generateBasicShares(bin, w, h, scale);
   // 原图预览放大到 share 尺寸（像素完美）
-  basicOrig.width = W; basicOrig.height = H;
+  setPreviewCanvasSize(basicOrig, W, H);
   const bTmp = document.createElement('canvas');
   bTmp.width = w; bTmp.height = h;
   bTmp.getContext('2d').putImageData(preview, 0, 0);
@@ -2554,9 +2660,9 @@ function renderBasic() {
   bCtx.imageSmoothingEnabled = false;
   bCtx.drawImage(bTmp, 0, 0, W, H);
   hideEmpty('basicOrigEmpty');
-  basicS1.width = W; basicS1.height = H;
-  basicS2.width = W; basicS2.height = H;
-  basicOverlay.width = W; basicOverlay.height = H;
+  setPreviewCanvasSize(basicS1, W, H);
+  setPreviewCanvasSize(basicS2, W, H);
+  setPreviewCanvasSize(basicOverlay, W, H);
   // Share 预览跟导出 PNG 一样透明（白像素 alpha=0），让格栅透出来
   basicS1.getContext('2d').putImageData(transparentizeForPreview(s1), 0, 0);
   basicS2.getContext('2d').putImageData(transparentizeForPreview(s2), 0, 0);
@@ -2828,7 +2934,7 @@ function renderColor() {
   const { s1, s2, W, H, preview } = generateColorShares(colorImage, w, h, scale, useDither, thr, exposure);
 
   // 原图预览像素完美放大到 share 尺寸，避免预览框显得小
-  colorOrig.width = W; colorOrig.height = H;
+  setPreviewCanvasSize(colorOrig, W, H);
   const oTmp = document.createElement('canvas');
   oTmp.width = w; oTmp.height = h;
   oTmp.getContext('2d').putImageData(preview, 0, 0);
@@ -2837,9 +2943,9 @@ function renderColor() {
   oCtx.drawImage(oTmp, 0, 0, W, H);
   hideEmpty('colorOrigEmpty');
 
-  colorS1.width = W; colorS1.height = H;
-  colorS2.width = W; colorS2.height = H;
-  colorOverlay.width = W; colorOverlay.height = H;
+  setPreviewCanvasSize(colorS1, W, H);
+  setPreviewCanvasSize(colorS2, W, H);
+  setPreviewCanvasSize(colorOverlay, W, H);
   colorS1.getContext('2d').putImageData(transparentizeForPreview(s1), 0, 0);
   colorS2.getContext('2d').putImageData(transparentizeForPreview(s2), 0, 0);
   colorOverlay.getContext('2d').putImageData(minOverlay(s1, s2), 0, 0);
@@ -3063,7 +3169,7 @@ function generateHalftone3Shares(s12Img, s13Img, s23Img, w, h, side, K, threshol
 // transparent=true 时：黑像素 alpha=255、白像素 alpha=0（透明底，适合打印透明片）
 function drawBitsToCanvas(canvas, bits, W, H, scale = 1, regMarks = false, transparent = false) {
   const outW = W * scale, outH = H * scale;
-  canvas.width = outW; canvas.height = outH;
+  setPreviewCanvasSize(canvas, outW, outH);
   const ctx = canvas.getContext('2d');
   if (transparent) ctx.clearRect(0, 0, outW, outH);
   const img = new ImageData(outW, outH);
@@ -3636,27 +3742,74 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
   }
   requestAnimationFrame(tick);
 
-  // 用户切 theme 时给个 burst 视觉提示 + 重新初始化
+  // ─── 全局背景炸开函数：上传/重生成/示例/导出 时调用一次 ───
+  // intensity: 0.5 (轻量) ~ 1.0 (满) ~ 1.5 (大力气)
+  window.__bgBurst = function(intensity = 1.0) {
+    burstFlash = Math.max(burstFlash, Math.min(intensity, 1.5));
+    nodes.forEach(n => {
+      const count = Math.floor((2 + Math.random() * 3) * intensity);
+      for (let k = 0; k < count; k++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (0.8 + Math.random() * 2.8) * intensity;
+        spawnFragment(n.x, n.y, {
+          angle, speed,
+          decay: 0.008 + Math.random() * 0.012,
+          burst: true,
+        });
+      }
+    });
+  };
+
+  // 用户切 theme 时也给个 burst 视觉提示 + 重新初始化色相
   document.getElementById('themeToggle')?.addEventListener('click', () => {
     setTimeout(() => {
       refreshHue();
-      burstFlash = 1.0;
-      nodes.forEach(n => {
-        const count = 3 + Math.floor(Math.random() * 3);
-        for (let k = 0; k < count; k++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 0.8 + Math.random() * 2.8;
-          spawnFragment(n.x, n.y, { angle, speed, decay: 0.008 + Math.random() * 0.012, burst: true });
-        }
-      });
+      window.__bgBurst(1.0);
     }, 50);
+  });
+})();
+
+// =================== 把背景 burst 接到关键交互上 ===================
+// 上传图片 / 重新生成 / 示例图 / 导出 PNG —— 每次都炸一下
+(function() {
+  function burstAt(intensity) {
+    return () => { if (window.__bgBurst) window.__bgBurst(intensity); };
+  }
+
+  // 文件输入：选好图后炸（dispatch change 才算数；过滤掉无文件场景）
+  ['basicFile', 'colorFile', 'htFileS12', 'htFileS13', 'htFileS23'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        if (window.__bgBurst) window.__bgBurst(0.8);
+      }
+    });
+  });
+
+  // 生成 share 按钮（重新生成）—— 中等力度
+  ['basicGenBtn', 'colorGenBtn', 'htGenBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', burstAt(1.0));
+  });
+
+  // 示例图按钮 —— 中等力度
+  ['basicDemoBtn2', 'colorDemoBtn', 'htDemoBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', burstAt(1.0));
+  });
+
+  // 导出 PNG —— 大力气一点，celebratory
+  ['basicPrintAllBtn', 'colorPrintAllBtn', 'htPrintAllBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', burstAt(1.3));
   });
 })();
 </script>
 
-<!-- ============ GLASS TWEAK PANEL ============ -->
+<!-- ============ DARK MODE TWEAK PANEL ============ -->
 <style>
-  .gt-toggle {
+  .dk-toggle {
     position: fixed;
     bottom: 18px;
     right: 18px;
@@ -3674,179 +3827,174 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
     -webkit-backdrop-filter: blur(8px);
     box-shadow: 0 4px 16px rgba(0,0,0,0.18);
   }
-  .gt-toggle:hover,
-  .gt-toggle.is-hover { background: rgba(15,15,15,0.95); }
-  .gt-panel {
+  .dk-toggle:hover { background: rgba(15,15,15,0.95); }
+  .dk-panel {
     position: fixed;
     bottom: 64px;
     right: 18px;
     z-index: 1000;
-    width: 280px;
-    background: rgba(255,255,255,0.92);
-    color: #0a0a0a;
-    border: 1px solid rgba(0,0,0,0.1);
+    width: 300px;
+    background: rgba(20,20,22,0.94);
+    color: #eee;
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 12px;
     padding: 14px;
     font-family: ui-monospace, monospace;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     display: none;
+    max-height: 80vh;
+    overflow-y: auto;
   }
-  .gt-panel.open { display: block; }
-  .gt-panel h4 {
-    margin: 10px 0 6px;
+  .dk-panel.open { display: block; }
+  .dk-panel h4 {
+    margin: 12px 0 6px;
     font-size: 9px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #888;
     font-weight: 600;
   }
-  .gt-panel h4:first-child { margin-top: 0; }
-  .gt-row {
+  .dk-panel h4:first-child { margin-top: 0; }
+  .dk-row {
     display: grid;
-    grid-template-columns: 80px 1fr 32px;
+    grid-template-columns: 92px 1fr 38px;
     gap: 8px;
     align-items: center;
     padding: 3px 0;
     font-size: 11px;
   }
-  .gt-row label { color: #555; }
-  .gt-row input[type="range"] {
+  .dk-row label { color: #aaa; }
+  .dk-row input[type="range"] {
     width: 100%;
     accent-color: var(--accent);
   }
-  .gt-row output {
+  .dk-row input[type="color"] {
+    width: 100%;
+    height: 24px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+  }
+  .dk-row output {
     text-align: right;
     color: var(--accent);
     font-variant-numeric: tabular-nums;
     font-size: 10px;
   }
-  .gt-snap {
-    margin-top: 10px;
+  .dk-snap {
+    margin-top: 12px;
     padding: 7px 10px;
     width: 100%;
     font-size: 10px;
-    background: #0a0a0a;
-    color: #fff;
+    background: var(--accent);
+    color: #000;
     border: none;
     border-radius: 6px;
     font-family: inherit;
     letter-spacing: 0.06em;
     cursor: pointer;
+    font-weight: 600;
   }
-  .gt-snap:hover,
-  .gt-snap.is-hover { background: #222; }
-  .gt-out {
+  .dk-snap:hover { filter: brightness(1.1); }
+  .dk-out {
     margin-top: 8px;
     font-size: 9px;
-    background: #f5f5f5;
-    color: #333;
+    background: rgba(0,0,0,0.4);
+    color: #ccc;
     padding: 8px;
     border-radius: 5px;
     white-space: pre-wrap;
-    max-height: 120px;
+    max-height: 140px;
     overflow-y: auto;
     display: none;
+    border: 1px solid rgba(255,255,255,0.08);
   }
-  .gt-out.show { display: block; }
+  .dk-out.show { display: block; }
 </style>
 
-<button class="gt-toggle" id="gtToggle">✨ GLASS</button>
-<div class="gt-panel" id="gtPanel">
-  <h4>CARD（卡片）</h4>
-  <div class="gt-row">
-    <label>不透明</label>
-    <input type="range" min="0" max="100" step="1" value="56" data-gv="--glass-card-opacity">
-    <output>56</output>
+<button class="dk-toggle" id="dkToggle">🌙 DARK</button>
+<div class="dk-panel" id="dkPanel">
+  <h4>DIVIDERS（分割线）</h4>
+  <div class="dk-row">
+    <label>Tab 下 %</label>
+    <input type="range" min="0" max="40" step="1" value="12" data-dv="--dk-tab-divider">
+    <output>12</output>
   </div>
-  <div class="gt-row">
-    <label>模糊 px</label>
-    <input type="range" min="0" max="40" step="1" value="2" data-gv="--glass-card-blur">
+  <div class="dk-row">
+    <label>顶栏底 %</label>
+    <input type="range" min="0" max="40" step="1" value="12" data-dv="--dk-topbar-divider">
+    <output>12</output>
+  </div>
+
+  <h4>CARD SHINE（卡片顶/底高光）</h4>
+  <div class="dk-row">
+    <label>中央峰 %</label>
+    <input type="range" min="0" max="100" step="1" value="19" data-dv="--dk-card-shine">
+    <output>19</output>
+  </div>
+
+  <h4>EMPTY WRAP（上传灰框）</h4>
+  <div class="dk-row">
+    <label>白色 %</label>
+    <input type="range" min="0" max="60" step="1" value="2" data-dv="--dk-wrap-bg">
     <output>2</output>
   </div>
-  <div class="gt-row">
-    <label>边框</label>
-    <input type="range" min="0" max="100" step="1" value="75" data-gv="--glass-card-border">
-    <output>75</output>
+
+  <h4>HOVER 色</h4>
+  <div class="dk-row">
+    <label>主色</label>
+    <input type="color" value="#ff7e38" data-dv="--dk-hover-color">
+    <output>·</output>
   </div>
-  <div class="gt-row">
-    <label>内高光</label>
-    <input type="range" min="0" max="100" step="1" value="45" data-gv="--glass-card-highlight">
-    <output>45</output>
+  <div class="dk-row">
+    <label>背景 %</label>
+    <input type="range" min="0" max="50" step="1" value="17" data-dv="--dk-hover-bg">
+    <output>17</output>
   </div>
-  <div class="gt-row">
-    <label>外阴影</label>
-    <input type="range" min="0" max="30" step="1" value="4" data-gv="--glass-card-shadow">
-    <output>4</output>
+  <div class="dk-row">
+    <label>描边 %</label>
+    <input type="range" min="0" max="100" step="1" value="35" data-dv="--dk-hover-border">
+    <output>35</output>
   </div>
-  <div class="gt-row">
-    <label>画布透</label>
-    <input type="range" min="0" max="100" step="1" value="60" data-gv="--glass-canvas-opacity">
-    <output>60</output>
+  <div class="dk-row">
+    <label>文字色</label>
+    <input type="color" value="#c8a585" data-dv="--dk-hover-text">
+    <output>·</output>
   </div>
 
-  <h4>SIDEBAR（侧栏渐变）</h4>
-  <div class="gt-row">
-    <label>顶部</label>
-    <input type="range" min="0" max="100" step="1" value="100" data-gv="--glass-sidebar-top">
-    <output>100</output>
-  </div>
-  <div class="gt-row">
-    <label>中部</label>
-    <input type="range" min="0" max="100" step="1" value="68" data-gv="--glass-sidebar-mid">
-    <output>68</output>
-  </div>
-  <div class="gt-row">
-    <label>底部</label>
-    <input type="range" min="0" max="100" step="1" value="38" data-gv="--glass-sidebar-bot">
-    <output>38</output>
-  </div>
-  <div class="gt-row">
-    <label>模糊 px</label>
-    <input type="range" min="0" max="40" step="1" value="2" data-gv="--glass-sidebar-blur">
-    <output>2</output>
-  </div>
-  <div class="gt-row">
-    <label>底按钮区</label>
-    <input type="range" min="0" max="100" step="1" value="0" data-gv="--glass-actions-opacity">
-    <output>0</output>
-  </div>
-
-  <h4>BACKGROUND（格栅）</h4>
-  <div class="gt-row">
-    <label>亮度</label>
-    <input type="range" min="0" max="100" step="1" value="27" data-gv="--lattice-alpha">
-    <output>27</output>
-  </div>
-
-  <button class="gt-snap" id="gtSnap">📋 复制 CSS 快照</button>
-  <pre class="gt-out" id="gtOut"></pre>
+  <button class="dk-snap" id="dkSnap">📋 复制 CSS 快照</button>
+  <pre class="dk-out" id="dkOut"></pre>
 </div>
 
 <script>
 (function() {
-  const toggle = document.getElementById('gtToggle');
-  const panel = document.getElementById('gtPanel');
-  const snapBtn = document.getElementById('gtSnap');
-  const out = document.getElementById('gtOut');
+  const toggle = document.getElementById('dkToggle');
+  const panel = document.getElementById('dkPanel');
+  const snapBtn = document.getElementById('dkSnap');
+  const out = document.getElementById('dkOut');
   toggle.addEventListener('click', () => panel.classList.toggle('open'));
 
-  panel.querySelectorAll('input[data-gv]').forEach(input => {
-    const out = input.nextElementSibling;
+  panel.querySelectorAll('input[data-dv]').forEach(input => {
+    const outEl = input.nextElementSibling;
+    const isColor = input.type === 'color';
     function apply() {
-      document.documentElement.style.setProperty(input.dataset.gv, input.value);
-      out.textContent = input.value;
+      document.documentElement.style.setProperty(input.dataset.dv, input.value);
+      if (!isColor) outEl.textContent = input.value;
+      else outEl.textContent = input.value.replace('#','');
     }
     apply();
     input.addEventListener('input', apply);
   });
 
   snapBtn.addEventListener('click', () => {
-    const inputs = panel.querySelectorAll('input[data-gv]');
-    let css = '/* === Glassmorphism snapshot === */\n:root {\n';
+    const inputs = panel.querySelectorAll('input[data-dv]');
+    let css = '/* === Dark-mode snapshot === */\n:root {\n';
     inputs.forEach(input => {
-      css += `  ${input.dataset.gv}: ${input.value};\n`;
+      css += `  ${input.dataset.dv}: ${input.value};\n`;
     });
     css += '}';
     out.textContent = css;
