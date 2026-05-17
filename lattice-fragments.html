@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lattice / fragments</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  html, body {
+    background: #F4F3EE;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', 'Menlo', monospace;
+  }
+  
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  
+  .regen {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(217, 119, 87, 0.08);
+    border: 1px solid rgba(217, 119, 87, 0.4);
+    color: rgba(217, 119, 87, 0.9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  
+  .regen:hover, .regen:active {
+    background: rgba(217, 119, 87, 0.18);
+    border-color: rgba(217, 119, 87, 0.7);
+    color: #D97757;
+    transform: rotate(180deg);
+  }
+  
+  .regen svg { width: 14px; height: 14px; }
+  
+  .seed {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(217, 119, 87, 0.55);
+    pointer-events: none;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="seed" id="seed-display">SEED · 0x0000</div>
+
+<button class="regen" onclick="regenerate()" aria-label="regenerate">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12a9 9 0 1 1-3-6.7L21 8"/>
+    <path d="M21 3v5h-5"/>
+  </svg>
+</button>
+
+<script>
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+const seedDisplay = document.getElementById('seed-display');
+
+let width, height;
+let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+function resize() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
+  ctx.imageSmoothingEnabled = false;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const W = () => width;
+const H = () => height;
+const isMobile = () => window.innerWidth < 640;
+
+let currentSeed = Math.floor(Math.random() * 0xFFFF);
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let rng = mulberry32(currentSeed);
+
+function updateSeedDisplay() {
+  seedDisplay.textContent = 'SEED · 0x' + currentSeed.toString(16).toUpperCase().padStart(4, '0');
+}
+updateSeedDisplay();
+
+// ============================================================
+// PARAMS
+// ============================================================
+const PARAMS = {
+  // Density: more nodes overall now, since we're distributing along a gradient
+  nodeCount: () => isMobile() ? 110 : 180,
+  // The growth zone spans from bottom (y=H) up to this fraction of screen height
+  growthSpan: 0.75,
+  // Density falloff curve — higher = sharper drop-off (more bottom-heavy)
+  densityCurve: 2.4,
+  hue: { r: 217, g: 119, b: 87 },
+  bgFade: 'rgba(244, 243, 238, 0.28)',
+  cellMutationRate: 0.015,
+  // Drift behavior: bottom nodes are nearly static (circuit), top nodes drift more (particle)
+  driftBase: 5,
+  driftMax: 14,
+};
+
+// Returns "altitude" 0..1 where 0 = bottom (root), 1 = top of growth zone
+function altitudeAt(y) {
+  const zoneTop = H() * (1 - PARAMS.growthSpan);
+  const t = (H() - y) / (H() - zoneTop);
+  return Math.max(0, Math.min(1, t));
+}
+
+// ============================================================
+// LATTICE NODES — distributed with density gradient
+// ============================================================
+let nodes = [];
+
+function initNodes() {
+  nodes = [];
+  const count = PARAMS.nodeCount();
+  rng = mulberry32(currentSeed);
+  const zoneTop = H() * (1 - PARAMS.growthSpan);
+  
+  for (let i = 0; i < count; i++) {
+    // Bias y heavily toward bottom using power curve
+    // r close to 0 -> y near bottom; r close to 1 -> y near top of zone
+    const r = Math.pow(rng(), PARAMS.densityCurve);
+    const y = H() - r * (H() - zoneTop);
+    const x = rng() * W();
+    
+    const alt = altitudeAt(y);
+    
+    nodes.push({
+      x, y,
+      baseX: x,
+      baseY: y,
+      altitude: alt,  // 0 at bottom, 1 at top
+      bits: 1 + Math.floor(rng() * 15),
+      phase: rng() * Math.PI * 2,
+      phaseSpeed: 0.006 + rng() * 0.008,
+      // Drift amplitude scales with altitude — circuit at bottom, particle on top
+      driftAmp: PARAMS.driftBase + alt * alt * (PARAMS.driftMax - PARAMS.driftBase),
+      // Top-zone nodes drift upward slowly (particle stream feel)
+      vy: alt > 0.5 ? -0.05 - rng() * 0.08 * alt : 0,
+      vx: alt > 0.5 ? (rng() - 0.5) * 0.06 * alt : 0,
+    });
+  }
+}
+initNodes();
+window.addEventListener('resize', initNodes);
+
+// ============================================================
+// FRAGMENTS — always drift upward (with the growth direction)
+// ============================================================
+const fragments = [];
+
+function spawnFragment(x, y, options = {}) {
+  const angle = options.angle !== undefined 
+    ? options.angle 
+    : -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+  const speed = options.speed !== undefined 
+    ? options.speed 
+    : 0.3 + Math.random() * 0.5;
+  const fragBits = Math.random() < 0.7 
+    ? (1 << Math.floor(Math.random() * 4))
+    : (1 + Math.floor(Math.random() * 15));
+  fragments.push({
+    x, y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    bits: fragBits,
+    life: 1.0,
+    decay: options.decay || (0.003 + Math.random() * 0.004),
+    burst: options.burst || false,
+  });
+}
+
+let breakTimer = 0;
+let burstFlash = 0;
+
+function drawCell(x, y, bits, r, g, b, alpha) {
+  const px = Math.round(x);
+  const py = Math.round(y);
+  const s = 3; // pixel scale — each subpixel is now s×s
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  if (bits & 0b0001) ctx.fillRect(px,         py,         s, s);
+  if (bits & 0b0010) ctx.fillRect(px + s,     py,         s, s);
+  if (bits & 0b0100) ctx.fillRect(px,         py + s,     s, s);
+  if (bits & 0b1000) ctx.fillRect(px + s,     py + s,     s, s);
+}
+
+// ============================================================
+// CONNECTION DRAWING — straight line, always
+// ============================================================
+function drawConnection(a, b, alpha, r, g, b_) {
+  ctx.strokeStyle = `rgba(${r}, ${g}, ${b_}, ${alpha})`;
+  ctx.beginPath();
+  ctx.moveTo(a.x + 0.5, a.y + 0.5);
+  ctx.lineTo(b.x + 0.5, b.y + 0.5);
+  ctx.stroke();
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function tick(t) {
+  ctx.fillStyle = PARAMS.bgFade;
+  ctx.fillRect(0, 0, W(), H());
+  
+  const { r, g, b } = PARAMS.hue;
+  
+  // Update node positions
+  nodes.forEach(n => {
+    n.phase += n.phaseSpeed;
+    
+    // All altitudes drift naturally; top altitudes additionally migrate upward
+    if (n.altitude > 0.5) {
+      n.baseX += n.vx;
+      n.baseY += n.vy;
+      
+      // Recycle: when a top-particle drifts off, respawn at bottom
+      if (n.baseY < H() * (1 - PARAMS.growthSpan) - 20) {
+        n.baseY = H() - Math.random() * 30;
+        n.baseX = Math.random() * W();
+        n.altitude = altitudeAt(n.baseY);
+        n.driftAmp = PARAMS.driftBase + n.altitude * n.altitude * (PARAMS.driftMax - PARAMS.driftBase);
+        n.vy = n.altitude > 0.5 ? -0.05 - Math.random() * 0.08 * n.altitude : 0;
+      }
+      if (n.baseX < -20) n.baseX = W() + 20;
+      if (n.baseX > W() + 20) n.baseX = -20;
+    }
+    
+    // Oscillation applied to all nodes (amplitude scales with altitude)
+    const dx = Math.sin(n.phase) * n.driftAmp;
+    const dy = Math.cos(n.phase * 0.7) * n.driftAmp * 0.75;
+    n.x = n.baseX + dx;
+    n.y = n.baseY + dy;
+    
+    // Update altitude as node moves
+    n.altitude = altitudeAt(n.y);
+    
+    if (Math.random() < PARAMS.cellMutationRate) {
+      const bitToFlip = 1 << Math.floor(Math.random() * 4);
+      let newBits = n.bits ^ bitToFlip;
+      if (newBits === 0) newBits = bitToFlip;
+      n.bits = newBits;
+    }
+  });
+  
+  // Draw connections — altitude-aware: bottom is denser + orthogonal, top is sparser + straight
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b2 = nodes[j];
+      const avgAlt = (a.altitude + b2.altitude) / 2;
+      // Max connection distance shrinks with altitude (sparser at top)
+      const maxDist = (isMobile() ? 95 : 120) * (1 - avgAlt * 0.55);
+      
+      const d = Math.hypot(a.x - b2.x, a.y - b2.y);
+      if (d < maxDist) {
+        let alpha = (1 - d / maxDist) * 0.32;
+        // Fade alpha at top altitudes — connections dissolve
+        alpha *= (1 - avgAlt * 0.6);
+        
+        const flicker = Math.sin(t * 0.002 + i * 0.7 + j * 0.3) > 0.97;
+        if (flicker) alpha *= 2.5;
+        if (burstFlash > 0) alpha *= (1 + burstFlash * 2);
+        
+        drawConnection(a, b2, alpha, r, g, b);
+      }
+    }
+  }
+  
+  // Draw nodes — alpha fades slightly with altitude
+  nodes.forEach(n => {
+    const pulse = 0.7 + Math.sin(t * 0.001 + n.phase) * 0.2;
+    let alpha = pulse * 0.95 + burstFlash * 0.3;
+    // Top nodes fade a bit (they're "becoming" particles)
+    alpha *= (1 - n.altitude * 0.35);
+    alpha = Math.min(alpha, 1);
+    drawCell(n.x, n.y, n.bits, r, g, b, alpha);
+  });
+  
+  // Ambient fragments — prefer spawning from mid-to-high altitude nodes
+  breakTimer++;
+  if (breakTimer > 18 && Math.random() < 0.6) {
+    // Weighted pick: bias toward higher-altitude nodes (they're more "loose")
+    let source;
+    if (Math.random() < 0.7) {
+      // Pick a top-half node
+      const topNodes = nodes.filter(n => n.altitude > 0.3);
+      source = topNodes.length > 0 
+        ? topNodes[Math.floor(Math.random() * topNodes.length)]
+        : nodes[Math.floor(Math.random() * nodes.length)];
+    } else {
+      source = nodes[Math.floor(Math.random() * nodes.length)];
+    }
+    const count = 1 + Math.floor(Math.random() * 3);
+    for (let k = 0; k < count; k++) spawnFragment(source.x, source.y);
+    breakTimer = 0;
+  }
+  
+  // Update + draw fragments
+  for (let i = fragments.length - 1; i >= 0; i--) {
+    const f = fragments[i];
+    f.x += f.vx;
+    f.y += f.vy;
+    if (!f.burst) f.vy -= 0.001; // upward buoyancy
+    f.life -= f.decay;
+    
+    if (f.life <= 0 || f.y < -20 || f.x < -20 || f.x > W() + 20) {
+      fragments.splice(i, 1);
+      continue;
+    }
+    
+    const alpha = f.burst ? f.life : f.life * 0.9;
+    drawCell(f.x, f.y, f.bits, r, g, b, alpha);
+    
+    if (!f.burst && f.life > 0.75) {
+      let nearest = null, nearestD = 70;
+      for (const n of nodes) {
+        const d = Math.hypot(n.x - f.x, n.y - f.y);
+        if (d < nearestD) { nearestD = d; nearest = n; }
+      }
+      if (nearest) {
+        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${f.life * 0.2})`;
+        ctx.beginPath();
+        ctx.moveTo(f.x + 0.5, f.y + 0.5);
+        ctx.lineTo(nearest.x + 0.5, nearest.y + 0.5);
+        ctx.stroke();
+      }
+    }
+  }
+  
+  if (burstFlash > 0.001) burstFlash *= 0.93;
+  else burstFlash = 0;
+  
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+function regenerate() {
+  currentSeed = Math.floor(Math.random() * 0xFFFF);
+  updateSeedDisplay();
+  
+  burstFlash = 1.0;
+  nodes.forEach(n => {
+    const count = 5 + Math.floor(Math.random() * 4);
+    for (let k = 0; k < count; k++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.8 + Math.random() * 2.8;
+      spawnFragment(n.x, n.y, { 
+        angle, speed, 
+        decay: 0.008 + Math.random() * 0.012, 
+        burst: true 
+      });
+    }
+  });
+  
+  setTimeout(() => initNodes(), 80);
+}
+</script>
+
+</body>
+</html>

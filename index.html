@@ -68,6 +68,20 @@
     --header-pad-bottom: 10px;
     --card-canvas-min: 200px;
     --card-canvas-max: 480px;
+
+    /* === Glassmorphism tweakable (0-100 整数 = 百分比) === */
+    --glass-card-opacity: 56;
+    --glass-card-blur: 2;
+    --glass-card-border: 75;
+    --glass-card-highlight: 45;
+    --glass-card-shadow: 4;
+    --glass-canvas-opacity: 60;
+    --glass-sidebar-top: 100;
+    --glass-sidebar-mid: 68;
+    --glass-sidebar-bot: 38;
+    --glass-sidebar-blur: 2;
+    --glass-actions-opacity: 0;
+    --lattice-alpha: 27;
   }
   /* 根据主题切对应的 name color */
   :root, [data-theme="dark"] {
@@ -161,7 +175,8 @@
     letter-spacing: 0.02em;
     line-height: 1;
   }
-  .theme-toggle:hover {
+  .theme-toggle:hover,
+  .theme-toggle.is-hover {
     color: var(--text);
     border-color: var(--border-strong);
     background: var(--bg-elev);
@@ -208,7 +223,8 @@
     border-bottom-color: var(--accent);
     font-weight: 500;
   }
-  .tab:hover:not(.active) { color: var(--text); }
+  .tab:hover:not(.active),
+  .tab.is-hover:not(.active) { color: var(--text); }
 
   /* ============ Controls — vertical rows + tooltips ============ */
   .controls {
@@ -263,7 +279,8 @@
     font-family: inherit;
     line-height: 1.2;
   }
-  .controls label.ctrl .value:hover {
+  .controls label.ctrl .value:hover,
+  .controls label.ctrl .value.is-hover {
     border-color: var(--border-strong);
   }
   .controls label.ctrl .value:focus {
@@ -356,7 +373,8 @@
     font-family: ui-monospace, monospace;
     line-height: 1;
   }
-  .ctrl-info:hover { color: var(--text); border-color: var(--text-muted); }
+  .ctrl-info:hover,
+  .ctrl-info.is-hover { color: var(--text); border-color: var(--text-muted); }
   /* （旧的 CSS :hover::after tooltip 已删除——现在用 .float-tip JS 浮窗，
       会更聪明地处理位置、换行、? 在 overflow 容器里的逃逸） */
   /* Preset chips sub-row — 跟 slider 起始位置对齐 */
@@ -435,7 +453,8 @@
     transition: all 0.15s ease;
     line-height: 1.4;
   }
-  button:hover { opacity: 0.85; }
+  button:hover,
+  button.is-hover { opacity: 0.85; }
   button:disabled {
     opacity: 0.3;
     cursor: not-allowed;
@@ -445,7 +464,8 @@
     border: 1px solid var(--border);
     color: var(--text);
   }
-  button.ghost:hover {
+  button.ghost:hover,
+  button.ghost.is-hover {
     border-color: var(--border-strong);
     background: var(--bg-elev);
     opacity: 1;
@@ -467,7 +487,13 @@
   #htGenBtn:not(:disabled):hover,
   #basicPrintAllBtn:not(:disabled):hover,
   #colorPrintAllBtn:not(:disabled):hover,
-  #htPrintAllBtn:not(:disabled):hover {
+  #htPrintAllBtn:not(:disabled):hover,
+  #basicGenBtn:not(:disabled).is-hover,
+  #colorGenBtn:not(:disabled).is-hover,
+  #htGenBtn:not(:disabled).is-hover,
+  #basicPrintAllBtn:not(:disabled).is-hover,
+  #colorPrintAllBtn:not(:disabled).is-hover,
+  #htPrintAllBtn:not(:disabled).is-hover {
     background: var(--accent-2);
     border-color: var(--accent-2);
     opacity: 1;
@@ -493,7 +519,8 @@
     transition: all 0.15s ease;
     letter-spacing: 0.02em;
   }
-  .preset-chip:hover {
+  .preset-chip:hover,
+  .preset-chip.is-hover {
     border-color: var(--text-muted);
     color: var(--text);
   }
@@ -539,7 +566,8 @@
     padding: var(--card-pad);
     transition: border-color 0.15s ease;
   }
-  .card:hover { border-color: var(--border-strong); }
+  .card:hover,
+  .card.is-hover { border-color: var(--border-strong); }
   .card h3 {
     margin: 0 0 6px;
     font-size: 16px;
@@ -581,7 +609,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .file-mini:hover {
+  .file-mini:hover,
+  .file-mini.is-hover {
     border-color: var(--accent);
     color: var(--accent);
   }
@@ -603,7 +632,7 @@
     justify-content: center;
     aspect-ratio: 1;
     position: relative;
-    border: 1px solid var(--border);
+    border: none;
   }
   /* basic + CMYK 用 grid-2，画布不强制方形——按图片本身比例显示 */
   .grid-2 .canvas-wrap {
@@ -668,11 +697,14 @@
   }
   /* Drop zone: 鼠标移上去高亮 + 拖拽过来时强高亮 */
   .canvas-wrap.drop-zone { cursor: pointer; }
-  .canvas-wrap.drop-zone:hover {
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 3%, var(--canvas-bg));
+  /* 用 !important 强制覆盖 glassmorphism 的 .canvas-wrap 背景 rule */
+  .canvas-wrap.drop-zone:hover,
+  .canvas-wrap.drop-zone.is-hover {
+    background: color-mix(in srgb, var(--accent) 10%, var(--canvas-bg)) !important;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent) !important;
   }
-  .canvas-wrap.drop-zone:hover .empty {
+  .canvas-wrap.drop-zone:hover .empty,
+  .canvas-wrap.drop-zone.is-hover .empty {
     color: var(--accent);
   }
   .canvas-wrap.drop-zone.drag-over {
@@ -717,9 +749,9 @@
     margin-top: 32px;
     padding-top: 14px;
     border-top: 1px solid var(--border);
-    font-size: 10px;
+    font-size: 14px;
     font-family: ui-monospace, "SF Mono", monospace;
-    color: var(--text-faint);
+    color: var(--text-muted);
     letter-spacing: 0.05em;
     display: flex;
     justify-content: space-between;
@@ -910,7 +942,8 @@
     background: var(--bg-elev);
     position: relative;
   }
-  .sidebar .preset-chip:hover {
+  .sidebar .preset-chip:hover,
+  .sidebar .preset-chip.is-hover {
     border-color: var(--text-muted);
     color: var(--text);
   }
@@ -999,12 +1032,37 @@
   .main {
     padding: 22px var(--body-pad-x) 60px;
     min-width: 0;
-    background: var(--bg);
-    background-image: radial-gradient(circle at 1px 1px, var(--grid-color) 1px, transparent 0);
-    background-size: var(--dot-size) var(--dot-size);
+    /* 透明背景让格栅 canvas 透出来 */
+    background: transparent;
   }
   .main-panel { display: none; }
   .main-panel.active { display: block; }
+
+  /* ============ Ambient lattice background canvas ============ */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;               /* 负 z-index：在所有静态内容下，但还在 html 之上 */
+    pointer-events: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  /* body / html 透明背景，让负 z-index 的 canvas 能透出来 */
+  html { background: var(--bg); }
+  body { background: transparent; }
+  /* 确保所有 UI 在 canvas 之上 —— 不在 .main 创建新堆叠上下文
+     否则卡片的 backdrop-filter 看不到 canvas（被堆叠上下文截断）
+     改用 canvas z-index: -1，让它在 body 静态内容之下 */
+  .sidebar { z-index: 2; }
+  /* .topbar-sticky 已经是 position: sticky + z-index: 50，不动 */
+  /* sidebar 半透明，让格栅微微透过 */
+  .sidebar {
+    background: color-mix(in srgb, var(--bg-sidebar) 92%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
 
   /* canvas-wrap 用 CSS vars 控制最小最大高 */
   .canvas-wrap {
@@ -1184,28 +1242,28 @@
   .main {
     animation: vc-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
   }
-  /* main-panel 里的卡片错峰从下浮上来（瀑布感）*/
-  .main-panel.active .grid-2 > .card,
-  .main-panel.active .grid-3 > .card {
+  /* main-panel 里的卡片错峰从下浮上来（瀑布感）—— 仅首次加载，避免切 tab 时 transform 干扰 :hover */
+  body.first-load .main-panel.active .grid-2 > .card,
+  body.first-load .main-panel.active .grid-3 > .card {
     animation: vc-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   }
-  .main-panel.active .grid-2 > .card:nth-child(1),
-  .main-panel.active .grid-3 > .card:nth-child(1) { animation-delay: 0.30s; }
-  .main-panel.active .grid-2 > .card:nth-child(2),
-  .main-panel.active .grid-3 > .card:nth-child(2) { animation-delay: 0.36s; }
-  .main-panel.active .grid-2 > .card:nth-child(3),
-  .main-panel.active .grid-3 > .card:nth-child(3) { animation-delay: 0.42s; }
-  .main-panel.active .grid-2 > .card:nth-child(4) { animation-delay: 0.48s; }
+  body.first-load .main-panel.active .grid-2 > .card:nth-child(1),
+  body.first-load .main-panel.active .grid-3 > .card:nth-child(1) { animation-delay: 0.30s; }
+  body.first-load .main-panel.active .grid-2 > .card:nth-child(2),
+  body.first-load .main-panel.active .grid-3 > .card:nth-child(2) { animation-delay: 0.36s; }
+  body.first-load .main-panel.active .grid-2 > .card:nth-child(3),
+  body.first-load .main-panel.active .grid-3 > .card:nth-child(3) { animation-delay: 0.42s; }
+  body.first-load .main-panel.active .grid-2 > .card:nth-child(4) { animation-delay: 0.48s; }
   /* 警告 banner 在卡片前面（上方）→ 先于卡片入场 */
-  .main-panel.active > .warning-banner {
+  body.first-load .main-panel.active > .warning-banner {
     animation: vc-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.24s backwards;
   }
   /* info 块在最下面 → 最后入场 */
-  .main-panel.active > .info {
+  body.first-load .main-panel.active > .info {
     animation: vc-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.55s backwards;
   }
   /* 3-shares 的小标题（① ② ③） */
-  .main-panel.active > h3[style] {
+  body.first-load .main-panel.active > h3[style] {
     animation: vc-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   }
 
@@ -1213,7 +1271,8 @@
   .card {
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.15s ease;
   }
-  .card:hover {
+  .card:hover,
+  .card.is-hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     border-color: var(--border-strong);
@@ -1242,7 +1301,8 @@
   .sidebar-actions .action-group button {
     transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
   }
-  .sidebar-actions .action-group button:not(:disabled):hover {
+  .sidebar-actions .action-group button:not(:disabled):hover,
+  .sidebar-actions .action-group button:not(:disabled).is-hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 25%, transparent);
   }
@@ -1250,6 +1310,90 @@
   /* tab 切换时新面板淡入 */
   .main-panel.active {
     animation-fill-mode: backwards;
+  }
+
+  /* ============================================================
+     ✨ GLASSMORPHISM —— 给卡片 / 侧栏 / banner 加磨砂玻璃感
+     让背后的橙色格栅若隐若现透出来
+     ============================================================ */
+  .card {
+    background: color-mix(in srgb, var(--bg-card) calc(var(--glass-card-opacity) * 1%), transparent);
+    -webkit-backdrop-filter: blur(calc(var(--glass-card-blur) * 1px)) saturate(160%);
+    backdrop-filter: blur(calc(var(--glass-card-blur) * 1px)) saturate(160%);
+    border: 1px solid color-mix(in srgb, var(--border) calc(var(--glass-card-border) * 1%), transparent);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, calc(var(--glass-card-highlight) / 100)),
+      0 calc(var(--glass-card-shadow) * 1px) calc(var(--glass-card-shadow) * 3px) rgba(0, 0, 0, calc(var(--glass-card-shadow) / 200));
+  }
+  /* canvas-wrap 也可半透明：让格栅在画布背景里若隐若现 */
+  .canvas-wrap {
+    background: color-mix(in srgb, var(--canvas-bg) calc(var(--glass-canvas-opacity) * 1%), transparent);
+  }
+
+  /* Sidebar：从底部更通透，向上逐渐变实的纵向渐变 */
+  .sidebar {
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--bg-sidebar) calc(var(--glass-sidebar-bot) * 1%), transparent) 0%,
+      color-mix(in srgb, var(--bg-sidebar) calc(var(--glass-sidebar-mid) * 1%), transparent) 35%,
+      color-mix(in srgb, var(--bg-sidebar) calc(var(--glass-sidebar-top) * 1%), transparent) 100%
+    );
+    -webkit-backdrop-filter: blur(calc(var(--glass-sidebar-blur) * 1px)) saturate(150%);
+    backdrop-filter: blur(calc(var(--glass-sidebar-blur) * 1px)) saturate(150%);
+  }
+  /* 底部 actions 区 */
+  .sidebar-actions {
+    background: color-mix(in srgb, var(--bg-sidebar) calc(var(--glass-actions-opacity) * 1%), transparent);
+    -webkit-backdrop-filter: blur(calc(var(--glass-sidebar-blur) * 1px - 4px)) saturate(150%);
+    backdrop-filter: blur(calc(var(--glass-sidebar-blur) * 1px - 4px)) saturate(150%);
+    border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  }
+
+  /* Topbar：保留现有 blur，调透明度让格栅顶部也微微透出来 */
+  .topbar-sticky {
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  }
+
+  /* CMYK 警告 banner 也磨砂化 */
+  .warning-banner {
+    background: color-mix(in srgb, var(--bg-elev) 78%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  }
+  /* Info 解释块 */
+  .info {
+    background: color-mix(in srgb, var(--bg-elev) 72%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  }
+
+  /* file-mini 按钮也用玻璃感 */
+  .file-mini {
+    background: color-mix(in srgb, var(--accent-tint) 90%, transparent);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Float-tip tooltip 也来一点 —— 半透明黑底 + 模糊 */
+  .float-tip {
+    background: color-mix(in srgb, var(--text) 90%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
+  }
+
+  /* 不支持 backdrop-filter 的浏览器自动 fallback 到不透明色（无问题） */
+  @supports not (backdrop-filter: blur(1px)) {
+    .card, .sidebar, .sidebar-actions, .topbar-sticky,
+    .warning-banner, .info {
+      background: var(--bg-card);
+    }
+    .sidebar, .sidebar-actions { background: var(--bg-sidebar); }
+    .topbar-sticky { background: var(--bg); }
   }
 
   /* 减少动画偏好的人：全部尊重 */
@@ -1270,6 +1414,9 @@
 </style>
 </head>
 <body>
+
+<!-- ============== AMBIENT BG: lattice/fragments canvas ============== -->
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
 
 <!-- ============== STICKY TOPBAR: header + tabs ============== -->
 <div class="topbar-sticky">
@@ -1716,7 +1863,7 @@
   </div>
 
   <div class="status-line">
-    <span><span class="dot"></span>VC_PLAYGROUND / v1.0 / single-file HTML / no deps</span>
+    <span><span class="dot"></span>VC_PLAYGROUND / v2.0 / no deps</span>
     <span>NAOR-SHAMIR · 1994 → 2026 · MADE BY SUANOVIL</span>
   </div>
   </main>
@@ -1724,6 +1871,12 @@
 
 <!-- ============ TWEAK PANEL (dev mode UI iteration) ============ -->
 <script>
+// =================== First-load animation flag ===================
+// 入场动画只在首次加载跑，1.5s 后移除 class，避免后续切 tab 时
+// transform 干扰 :hover 检测（导致切 tab 后第一次 hover 没反应的 bug）
+document.body.classList.add('first-load');
+setTimeout(() => document.body.classList.remove('first-load'), 1600);
+
 // =================== Theme toggle (light / dark) ===================
 (function() {
   const root = document.documentElement;
@@ -1769,7 +1922,75 @@ document.querySelectorAll('.file-mini input[type="file"]').forEach(input => {
 });
 
 // =================== Canvas-wrap as drop zone (click + drag-drop upload) ===================
-// 找到每个 .card 里的 file input 和 canvas-wrap，把 canvas-wrap 变成 drop zone
+// hover 完全靠 CSS :hover，不用 JS（之前的 JS 干扰了正常事件流，导致 click 后 hover 不响应）
+window.__rehoverDropZone = () => {};   // 给 tab switching 留个空 stub
+
+// ─── 全局指针位置跟踪 + nudgeHover ───
+// 跟踪鼠标最后位置；切回标签页 / 窗口聚焦 / 点击按钮后，
+// 派发一个合成 mousemove 让 tooltip 委托重新评估 hover target。
+// （以前的 body.pointer-events: none 一旦 rAF 没跑就会永久卡死 mousemove，
+//   这个方案完全不动 pointer-events，安全得多。）
+window.__lastMouseX = -1;
+window.__lastMouseY = -1;
+const HOVER_MIRROR_SELECTOR = [
+  'button:not(:disabled)',
+  '.tab',
+  '.theme-toggle',
+  '.card',
+  '.file-mini',
+  '.canvas-wrap.drop-zone',
+  '.ctrl-info[data-tip]',
+  '.preset-chip',
+  '.value[data-slider]',
+  '.gt-toggle',
+  '.gt-snap',
+].join(',');
+let hoverMirrorEls = new Set();
+
+function setHoverMirrorsFrom(target) {
+  const next = new Set();
+  for (let el = target; el && el.nodeType === 1; el = el.parentElement) {
+    if (el.matches && el.matches(HOVER_MIRROR_SELECTOR)) next.add(el);
+  }
+  hoverMirrorEls.forEach(el => {
+    if (!next.has(el)) el.classList.remove('is-hover');
+  });
+  next.forEach(el => el.classList.add('is-hover'));
+  hoverMirrorEls = next;
+}
+
+window.__clearHoverMirrors = function() {
+  hoverMirrorEls.forEach(el => el.classList.remove('is-hover'));
+  hoverMirrorEls.clear();
+};
+
+function trackPointer(e) {
+  window.__lastMouseX = e.clientX;
+  window.__lastMouseY = e.clientY;
+  setHoverMirrorsFrom(e.target);
+}
+document.addEventListener('mousemove', trackPointer, { capture: true, passive: true });
+document.addEventListener('pointermove', trackPointer, { capture: true, passive: true });
+document.addEventListener('pointerdown', () => window.__clearHoverMirrors(), { capture: true, passive: true });
+
+window.__nudgeHover = function() {
+  if (window.__lastMouseX < 0) return;
+  const x = window.__lastMouseX, y = window.__lastMouseY;
+  const target = document.elementFromPoint(x, y) || document;
+  setHoverMirrorsFrom(target);
+  target.dispatchEvent(new MouseEvent('mousemove', {
+    bubbles: true, cancelable: true, view: window,
+    clientX: x, clientY: y,
+  }));
+};
+
+// 切回标签页或窗口重新聚焦时主动 nudge 一次（这两种情况鼠标可能没动但页面状态变了）。
+// 不要监听 pointerup —— 点击 ? 时也会触发，没意义。
+document.addEventListener('visibilitychange', () => { if (!document.hidden) window.__nudgeHover(); });
+window.addEventListener('focus', () => window.__nudgeHover());
+window.addEventListener('blur', () => window.__clearHoverMirrors());
+
+// 找到每个 .card 里的 file input 和 canvas-wrap，加上 drop zone class + 拖拽 handler
 document.querySelectorAll('.card').forEach(card => {
   const fileInput = card.querySelector('input[type="file"]');
   const canvasWrap = card.querySelector('.canvas-wrap');
@@ -1932,6 +2153,10 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.sidebar-panel, .main-panel').forEach(p => {
       p.classList.toggle('active', p.dataset.panel === tab);
     });
+    btn.blur();
+    // 切 tab 后强制浏览器重新评估 hover state（不然鼠标位置不变时 :hover 不会自己重算）
+    if (window.__nudgeHover) window.__nudgeHover();
+    if (window.__rehoverDropZone) requestAnimationFrame(window.__rehoverDropZone);
   });
 });
 
@@ -2000,54 +2225,43 @@ document.querySelectorAll('.tab').forEach(btn => {
   function hide() {
     tip.classList.remove('visible', 'right', 'left', 'below', 'compact');
   }
-  // ─── 简单可靠的 hover tooltip ───
-  // ? 图标：只有 mouseenter / mouseleave，没有点击事件
-  // preset-chip：mouseenter 显示 mm 提示，mouseleave 隐藏，click 隐藏（防止 click 后 mouseleave 漏发卡住）
-  function bind(el) {
-    if (el.dataset.tipBound) return;
-    el.dataset.tipBound = '1';
+  // ─── mousemove 委托 hover tooltip ───
+  // 用 document-level mousemove 做 hit-test，而不是 per-element mouseenter/mouseleave。
+  // 这样避开了浏览器"点击/聚焦/切标签页后 mouseenter 不再自动重发"的行为：
+  // mousemove 只要鼠标动了就必发，所以 tooltip 状态总能在第一次动鼠标时纠正。
+  // 顺带省掉 MutationObserver 和 dataset.tipBound 簿记。
+  let currentTipTarget = null;
 
-    if (el.matches('.preset-chip[data-mm]')) {
-      el.addEventListener('mouseenter', () => {
-        show(el, el.dataset.mm + ' mm 长边', { pos: 'below', compact: true });
-      });
-      el.addEventListener('mouseleave', hide);
-      // 点击后藏起来（用户已选完不需要 hint）
-      el.addEventListener('click', hide);
-    } else if (el.matches('.ctrl-info[data-tip]')) {
-      el.addEventListener('mouseenter', () => show(el, el.dataset.tip));
-      el.addEventListener('mouseleave', hide);
-      // ? 没有功能性 click，但用户可能点。点了后浏览器有时漏发 mouseleave
-      // 让 ? 在 click 时强制重新显示一次，并 stopPropagation 避免父 label 抢焦点
-      el.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        show(el, el.dataset.tip);
-      });
+  function findTipTarget(el) {
+    if (!el || el === tip || tip.contains(el)) return null;
+    return el.closest && el.closest('.ctrl-info[data-tip], .preset-chip[data-mm]');
+  }
+
+  function updateTip(target) {
+    if (target === currentTipTarget) return;
+    currentTipTarget = target;
+    if (!target) { hide(); return; }
+    if (target.matches('.preset-chip[data-mm]')) {
+      show(target, target.dataset.mm + ' mm 长边', { pos: 'below', compact: true });
+    } else if (target.matches('.ctrl-info[data-tip]')) {
+      show(target, target.dataset.tip);
+    } else {
+      hide();
     }
   }
 
-  function bindAll() {
-    document.querySelectorAll('.ctrl-info[data-tip], .preset-chip[data-mm]').forEach(bind);
-  }
+  document.addEventListener('mousemove', (e) => {
+    updateTip(findTipTarget(e.target));
+  }, { passive: true });
 
-  bindAll();
-
-  // MutationObserver 只观察 .app 子树（避开 .float-tip 自身变更触发反馈循环）
-  if (window.MutationObserver) {
-    const app = document.querySelector('.app');
-    if (app) {
-      new MutationObserver(bindAll).observe(app, {
-        childList: true,
-        subtree: true,
-      });
-    }
-  }
-
-  // 安全网
-  document.addEventListener('scroll', hide, true);
-  window.addEventListener('blur', hide);
-  document.addEventListener('mouseleave', hide);
+  // 安全网：以下情况主动清空 tooltip + currentTipTarget，
+  // 让下一次 mousemove 重新评估
+  function clearTip() { updateTip(null); }
+  document.addEventListener('scroll', clearTip, true);
+  document.addEventListener('pointerdown', clearTip, true);
+  window.addEventListener('blur', clearTip);
+  document.addEventListener('mouseleave', clearTip);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearTip(); });
 })();
 
 // =================== Sync sidebar top to topbar height ===================
@@ -2095,6 +2309,15 @@ function orOverlay(...imgs) {
     out.data[i+3] = 255;
   }
   return out;
+}
+// 把 ImageData 拷贝一份并把白色像素的 alpha 设为 0（让预览也跟导出 PNG 一样透明）
+function transparentizeForPreview(imgData) {
+  const copy = new ImageData(new Uint8ClampedArray(imgData.data), imgData.width, imgData.height);
+  const d = copy.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i] === 255 && d[i+1] === 255 && d[i+2] === 255) d[i+3] = 0;
+  }
+  return copy;
 }
 // 从 Image 元素得到二值数组（0=白，1=黑），同时输出预览
 function toBinary(image, threshold, targetW, targetH, useDither = false) {
@@ -2242,6 +2465,7 @@ document.querySelectorAll('[data-basic-preset]').forEach(btn => {
     basicPrintMmVal.textContent = mm;
     updateBasicSizeHint();
     highlightBasicPreset();
+    btn.blur();                       // 释放 focus，避免后续 hover 卡死
   });
 });
 
@@ -2333,9 +2557,11 @@ function renderBasic() {
   basicS1.width = W; basicS1.height = H;
   basicS2.width = W; basicS2.height = H;
   basicOverlay.width = W; basicOverlay.height = H;
-  basicS1.getContext('2d').putImageData(s1, 0, 0);
-  basicS2.getContext('2d').putImageData(s2, 0, 0);
-  basicOverlay.getContext('2d').putImageData(orOverlay(s1, s2), 0, 0);
+  // Share 预览跟导出 PNG 一样透明（白像素 alpha=0），让格栅透出来
+  basicS1.getContext('2d').putImageData(transparentizeForPreview(s1), 0, 0);
+  basicS2.getContext('2d').putImageData(transparentizeForPreview(s2), 0, 0);
+  // 叠加结果也透明化
+  basicOverlay.getContext('2d').putImageData(transparentizeForPreview(orOverlay(s1, s2)), 0, 0);
   ['basicS1Empty','basicS2Empty','basicOverlayEmpty'].forEach(hideEmpty);
 }
 
@@ -2558,6 +2784,7 @@ document.querySelectorAll('[data-color-preset]').forEach(btn => {
     colorPrintMm.value = mm;
     colorPrintMmVal.textContent = mm;
     highlightColorPreset();
+    btn.blur();
   });
 });
 
@@ -2613,8 +2840,8 @@ function renderColor() {
   colorS1.width = W; colorS1.height = H;
   colorS2.width = W; colorS2.height = H;
   colorOverlay.width = W; colorOverlay.height = H;
-  colorS1.getContext('2d').putImageData(s1, 0, 0);
-  colorS2.getContext('2d').putImageData(s2, 0, 0);
+  colorS1.getContext('2d').putImageData(transparentizeForPreview(s1), 0, 0);
+  colorS2.getContext('2d').putImageData(transparentizeForPreview(s2), 0, 0);
   colorOverlay.getContext('2d').putImageData(minOverlay(s1, s2), 0, 0);
   ['colorS1Empty', 'colorS2Empty', 'colorOverlayEmpty'].forEach(hideEmpty);
 }
@@ -2960,6 +3187,7 @@ document.querySelectorAll('[data-ht-preset]').forEach(btn => {
     htPrintMm.value = mm;
     htPrintMmVal.textContent = mm;
     highlightHtPreset();
+    btn.blur();
   });
 });
 
@@ -3071,14 +3299,13 @@ function renderHt() {
   );
   const W = result.W, H = result.H;
 
-  // Shares（drawBitsToCanvas 的 scale 把 share 像素再放大 htScale 倍）
-  drawBitsToCanvas(document.getElementById('htShare1'), result.share1, W, H, scale, false);
-  drawBitsToCanvas(document.getElementById('htShare2'), result.share2, W, H, scale, false);
-  drawBitsToCanvas(document.getElementById('htShare3'), result.share3, W, H, scale, false);
-  // 叠加
-  drawBitsToCanvas(document.getElementById('htOv12'), result.ov12, W, H, scale, false);
-  drawBitsToCanvas(document.getElementById('htOv13'), result.ov13, W, H, scale, false);
-  drawBitsToCanvas(document.getElementById('htOv23'), result.ov23, W, H, scale, false);
+  // Shares + 叠加都用透明渲染（白像素 alpha=0），跟导出 PNG 一致，让格栅透过来
+  drawBitsToCanvas(document.getElementById('htShare1'), result.share1, W, H, scale, false, true);
+  drawBitsToCanvas(document.getElementById('htShare2'), result.share2, W, H, scale, false, true);
+  drawBitsToCanvas(document.getElementById('htShare3'), result.share3, W, H, scale, false, true);
+  drawBitsToCanvas(document.getElementById('htOv12'), result.ov12, W, H, scale, false, true);
+  drawBitsToCanvas(document.getElementById('htOv13'), result.ov13, W, H, scale, false, true);
+  drawBitsToCanvas(document.getElementById('htOv23'), result.ov23, W, H, scale, false, true);
   ['htShare1Empty','htShare2Empty','htShare3Empty','htOv12Empty','htOv13Empty','htOv23Empty'].forEach(hideEmpty);
 
   window.__htCache = result;
@@ -3149,5 +3376,489 @@ document.getElementById('htPrintAllBtn').addEventListener('click', () => {
   }, 50);
 });
 </script>
+
+<!-- ============== AMBIENT LATTICE BACKGROUND ============== -->
+<script>
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    ctx.imageSmoothingEnabled = false;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const W = () => width;
+  const H = () => height;
+  const isMobile = () => window.innerWidth < 640;
+
+  // 从 CSS var --accent 抽 RGB 值，主题切换会跟着变（缓存一份避免每帧重算）
+  let hueCache = { r: 240, g: 78, b: 31 };  // 默认 light accent
+  function refreshHue() {
+    const accentStr = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    // accent 是 hex 格式，比如 #f04e1f / #ff7a45
+    const m = accentStr.match(/^#?([0-9a-f]{6})$/i);
+    if (m) {
+      const hex = m[1];
+      hueCache = {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+      };
+    }
+  }
+  refreshHue();
+  // 监听 data-theme 变化（用 MutationObserver）
+  new MutationObserver(refreshHue).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  });
+
+  let currentSeed = Math.floor(Math.random() * 0xFFFF);
+  function mulberry32(a) {
+    return function() {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  let rng = mulberry32(currentSeed);
+
+  const PARAMS = {
+    nodeCount: () => isMobile() ? 80 : 130,    // 比原版少一些，更 ambient
+    growthSpan: 0.75,
+    densityCurve: 2.4,
+    cellMutationRate: 0.012,
+    driftBase: 5,
+    driftMax: 14,
+    // 透明 fade（拖影色用 destination-out 擦除）
+    fadeAlpha: 0.06,
+    // 整体不透明度（每帧从 CSS var --lattice-alpha 动态读取）
+    get globalAlpha() {
+      const v = getComputedStyle(document.documentElement).getPropertyValue('--lattice-alpha').trim();
+      const n = parseFloat(v);
+      return isFinite(n) ? n / 100 : 0.85;
+    },
+  };
+
+  function altitudeAt(y) {
+    const zoneTop = H() * (1 - PARAMS.growthSpan);
+    const t = (H() - y) / (H() - zoneTop);
+    return Math.max(0, Math.min(1, t));
+  }
+
+  let nodes = [];
+  function initNodes() {
+    nodes = [];
+    const count = PARAMS.nodeCount();
+    rng = mulberry32(currentSeed);
+    const zoneTop = H() * (1 - PARAMS.growthSpan);
+    for (let i = 0; i < count; i++) {
+      const r = Math.pow(rng(), PARAMS.densityCurve);
+      const y = H() - r * (H() - zoneTop);
+      const x = rng() * W();
+      const alt = altitudeAt(y);
+      nodes.push({
+        x, y,
+        baseX: x, baseY: y,
+        altitude: alt,
+        bits: 1 + Math.floor(rng() * 15),
+        phase: rng() * Math.PI * 2,
+        phaseSpeed: 0.006 + rng() * 0.008,
+        driftAmp: PARAMS.driftBase + alt * alt * (PARAMS.driftMax - PARAMS.driftBase),
+        vy: alt > 0.5 ? -0.05 - rng() * 0.08 * alt : 0,
+        vx: alt > 0.5 ? (rng() - 0.5) * 0.06 * alt : 0,
+      });
+    }
+  }
+  initNodes();
+  window.addEventListener('resize', initNodes);
+
+  const fragments = [];
+  function spawnFragment(x, y, options = {}) {
+    const angle = options.angle !== undefined ? options.angle : -Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+    const speed = options.speed !== undefined ? options.speed : 0.3 + Math.random() * 0.5;
+    const fragBits = Math.random() < 0.7 ? (1 << Math.floor(Math.random() * 4)) : (1 + Math.floor(Math.random() * 15));
+    fragments.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      bits: fragBits,
+      life: 1.0,
+      decay: options.decay || (0.003 + Math.random() * 0.004),
+      burst: options.burst || false,
+    });
+  }
+
+  let breakTimer = 0;
+  let burstFlash = 0;
+
+  function drawCell(x, y, bits, r, g, b, alpha) {
+    const px = Math.round(x);
+    const py = Math.round(y);
+    const s = 3;
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * PARAMS.globalAlpha})`;
+    if (bits & 0b0001) ctx.fillRect(px,         py,         s, s);
+    if (bits & 0b0010) ctx.fillRect(px + s,     py,         s, s);
+    if (bits & 0b0100) ctx.fillRect(px,         py + s,     s, s);
+    if (bits & 0b1000) ctx.fillRect(px + s,     py + s,     s, s);
+  }
+  function drawConnection(a, b, alpha, r, g, b_) {
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b_}, ${alpha * PARAMS.globalAlpha})`;
+    ctx.beginPath();
+    ctx.moveTo(a.x + 0.5, a.y + 0.5);
+    ctx.lineTo(b.x + 0.5, b.y + 0.5);
+    ctx.stroke();
+  }
+
+  function tick(t) {
+    // 用 destination-out 透明擦除（不再用页面 bg 色覆盖，保持 canvas 透明背景）
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = `rgba(0, 0, 0, ${PARAMS.fadeAlpha})`;
+    ctx.fillRect(0, 0, W(), H());
+    ctx.globalCompositeOperation = 'source-over';
+
+    const { r, g, b } = hueCache;
+
+    nodes.forEach(n => {
+      n.phase += n.phaseSpeed;
+      if (n.altitude > 0.5) {
+        n.baseX += n.vx;
+        n.baseY += n.vy;
+        if (n.baseY < H() * (1 - PARAMS.growthSpan) - 20) {
+          n.baseY = H() - Math.random() * 30;
+          n.baseX = Math.random() * W();
+          n.altitude = altitudeAt(n.baseY);
+          n.driftAmp = PARAMS.driftBase + n.altitude * n.altitude * (PARAMS.driftMax - PARAMS.driftBase);
+          n.vy = n.altitude > 0.5 ? -0.05 - Math.random() * 0.08 * n.altitude : 0;
+        }
+        if (n.baseX < -20) n.baseX = W() + 20;
+        if (n.baseX > W() + 20) n.baseX = -20;
+      }
+      const dx = Math.sin(n.phase) * n.driftAmp;
+      const dy = Math.cos(n.phase * 0.7) * n.driftAmp * 0.75;
+      n.x = n.baseX + dx;
+      n.y = n.baseY + dy;
+      n.altitude = altitudeAt(n.y);
+      if (Math.random() < PARAMS.cellMutationRate) {
+        const bitToFlip = 1 << Math.floor(Math.random() * 4);
+        let newBits = n.bits ^ bitToFlip;
+        if (newBits === 0) newBits = bitToFlip;
+        n.bits = newBits;
+      }
+    });
+
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b2 = nodes[j];
+        const avgAlt = (a.altitude + b2.altitude) / 2;
+        const maxDist = (isMobile() ? 95 : 120) * (1 - avgAlt * 0.55);
+        const d = Math.hypot(a.x - b2.x, a.y - b2.y);
+        if (d < maxDist) {
+          let alpha = (1 - d / maxDist) * 0.32;
+          alpha *= (1 - avgAlt * 0.6);
+          const flicker = Math.sin(t * 0.002 + i * 0.7 + j * 0.3) > 0.97;
+          if (flicker) alpha *= 2.5;
+          if (burstFlash > 0) alpha *= (1 + burstFlash * 2);
+          drawConnection(a, b2, alpha, r, g, b);
+        }
+      }
+    }
+
+    nodes.forEach(n => {
+      const pulse = 0.7 + Math.sin(t * 0.001 + n.phase) * 0.2;
+      let alpha = pulse * 0.95 + burstFlash * 0.3;
+      alpha *= (1 - n.altitude * 0.35);
+      alpha = Math.min(alpha, 1);
+      drawCell(n.x, n.y, n.bits, r, g, b, alpha);
+    });
+
+    breakTimer++;
+    if (breakTimer > 18 && Math.random() < 0.6) {
+      let source;
+      if (Math.random() < 0.7) {
+        const topNodes = nodes.filter(n => n.altitude > 0.3);
+        source = topNodes.length > 0 ? topNodes[Math.floor(Math.random() * topNodes.length)] : nodes[Math.floor(Math.random() * nodes.length)];
+      } else {
+        source = nodes[Math.floor(Math.random() * nodes.length)];
+      }
+      const count = 1 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < count; k++) spawnFragment(source.x, source.y);
+      breakTimer = 0;
+    }
+
+    for (let i = fragments.length - 1; i >= 0; i--) {
+      const f = fragments[i];
+      f.x += f.vx;
+      f.y += f.vy;
+      if (!f.burst) f.vy -= 0.001;
+      f.life -= f.decay;
+      if (f.life <= 0 || f.y < -20 || f.x < -20 || f.x > W() + 20) {
+        fragments.splice(i, 1);
+        continue;
+      }
+      const alpha = f.burst ? f.life : f.life * 0.9;
+      drawCell(f.x, f.y, f.bits, r, g, b, alpha);
+      if (!f.burst && f.life > 0.75) {
+        let nearest = null, nearestD = 70;
+        for (const n of nodes) {
+          const d = Math.hypot(n.x - f.x, n.y - f.y);
+          if (d < nearestD) { nearestD = d; nearest = n; }
+        }
+        if (nearest) {
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${f.life * 0.2 * PARAMS.globalAlpha})`;
+          ctx.beginPath();
+          ctx.moveTo(f.x + 0.5, f.y + 0.5);
+          ctx.lineTo(nearest.x + 0.5, nearest.y + 0.5);
+          ctx.stroke();
+        }
+      }
+    }
+
+    if (burstFlash > 0.001) burstFlash *= 0.93;
+    else burstFlash = 0;
+
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // 用户切 theme 时给个 burst 视觉提示 + 重新初始化
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    setTimeout(() => {
+      refreshHue();
+      burstFlash = 1.0;
+      nodes.forEach(n => {
+        const count = 3 + Math.floor(Math.random() * 3);
+        for (let k = 0; k < count; k++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 0.8 + Math.random() * 2.8;
+          spawnFragment(n.x, n.y, { angle, speed, decay: 0.008 + Math.random() * 0.012, burst: true });
+        }
+      });
+    }, 50);
+  });
+})();
+</script>
+
+<!-- ============ GLASS TWEAK PANEL ============ -->
+<style>
+  .gt-toggle {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    z-index: 1000;
+    background: rgba(15,15,15,0.85);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  }
+  .gt-toggle:hover,
+  .gt-toggle.is-hover { background: rgba(15,15,15,0.95); }
+  .gt-panel {
+    position: fixed;
+    bottom: 64px;
+    right: 18px;
+    z-index: 1000;
+    width: 280px;
+    background: rgba(255,255,255,0.92);
+    color: #0a0a0a;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: ui-monospace, monospace;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: none;
+  }
+  .gt-panel.open { display: block; }
+  .gt-panel h4 {
+    margin: 10px 0 6px;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #888;
+    font-weight: 600;
+  }
+  .gt-panel h4:first-child { margin-top: 0; }
+  .gt-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 32px;
+    gap: 8px;
+    align-items: center;
+    padding: 3px 0;
+    font-size: 11px;
+  }
+  .gt-row label { color: #555; }
+  .gt-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .gt-row output {
+    text-align: right;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+  }
+  .gt-snap {
+    margin-top: 10px;
+    padding: 7px 10px;
+    width: 100%;
+    font-size: 10px;
+    background: #0a0a0a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .gt-snap:hover,
+  .gt-snap.is-hover { background: #222; }
+  .gt-out {
+    margin-top: 8px;
+    font-size: 9px;
+    background: #f5f5f5;
+    color: #333;
+    padding: 8px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow-y: auto;
+    display: none;
+  }
+  .gt-out.show { display: block; }
+</style>
+
+<button class="gt-toggle" id="gtToggle">✨ GLASS</button>
+<div class="gt-panel" id="gtPanel">
+  <h4>CARD（卡片）</h4>
+  <div class="gt-row">
+    <label>不透明</label>
+    <input type="range" min="0" max="100" step="1" value="56" data-gv="--glass-card-opacity">
+    <output>56</output>
+  </div>
+  <div class="gt-row">
+    <label>模糊 px</label>
+    <input type="range" min="0" max="40" step="1" value="2" data-gv="--glass-card-blur">
+    <output>2</output>
+  </div>
+  <div class="gt-row">
+    <label>边框</label>
+    <input type="range" min="0" max="100" step="1" value="75" data-gv="--glass-card-border">
+    <output>75</output>
+  </div>
+  <div class="gt-row">
+    <label>内高光</label>
+    <input type="range" min="0" max="100" step="1" value="45" data-gv="--glass-card-highlight">
+    <output>45</output>
+  </div>
+  <div class="gt-row">
+    <label>外阴影</label>
+    <input type="range" min="0" max="30" step="1" value="4" data-gv="--glass-card-shadow">
+    <output>4</output>
+  </div>
+  <div class="gt-row">
+    <label>画布透</label>
+    <input type="range" min="0" max="100" step="1" value="60" data-gv="--glass-canvas-opacity">
+    <output>60</output>
+  </div>
+
+  <h4>SIDEBAR（侧栏渐变）</h4>
+  <div class="gt-row">
+    <label>顶部</label>
+    <input type="range" min="0" max="100" step="1" value="100" data-gv="--glass-sidebar-top">
+    <output>100</output>
+  </div>
+  <div class="gt-row">
+    <label>中部</label>
+    <input type="range" min="0" max="100" step="1" value="68" data-gv="--glass-sidebar-mid">
+    <output>68</output>
+  </div>
+  <div class="gt-row">
+    <label>底部</label>
+    <input type="range" min="0" max="100" step="1" value="38" data-gv="--glass-sidebar-bot">
+    <output>38</output>
+  </div>
+  <div class="gt-row">
+    <label>模糊 px</label>
+    <input type="range" min="0" max="40" step="1" value="2" data-gv="--glass-sidebar-blur">
+    <output>2</output>
+  </div>
+  <div class="gt-row">
+    <label>底按钮区</label>
+    <input type="range" min="0" max="100" step="1" value="0" data-gv="--glass-actions-opacity">
+    <output>0</output>
+  </div>
+
+  <h4>BACKGROUND（格栅）</h4>
+  <div class="gt-row">
+    <label>亮度</label>
+    <input type="range" min="0" max="100" step="1" value="27" data-gv="--lattice-alpha">
+    <output>27</output>
+  </div>
+
+  <button class="gt-snap" id="gtSnap">📋 复制 CSS 快照</button>
+  <pre class="gt-out" id="gtOut"></pre>
+</div>
+
+<script>
+(function() {
+  const toggle = document.getElementById('gtToggle');
+  const panel = document.getElementById('gtPanel');
+  const snapBtn = document.getElementById('gtSnap');
+  const out = document.getElementById('gtOut');
+  toggle.addEventListener('click', () => panel.classList.toggle('open'));
+
+  panel.querySelectorAll('input[data-gv]').forEach(input => {
+    const out = input.nextElementSibling;
+    function apply() {
+      document.documentElement.style.setProperty(input.dataset.gv, input.value);
+      out.textContent = input.value;
+    }
+    apply();
+    input.addEventListener('input', apply);
+  });
+
+  snapBtn.addEventListener('click', () => {
+    const inputs = panel.querySelectorAll('input[data-gv]');
+    let css = '/* === Glassmorphism snapshot === */\n:root {\n';
+    inputs.forEach(input => {
+      css += `  ${input.dataset.gv}: ${input.value};\n`;
+    });
+    css += '}';
+    out.textContent = css;
+    out.classList.add('show');
+    try {
+      navigator.clipboard.writeText(css);
+      snapBtn.textContent = '✓ 已复制';
+      setTimeout(() => snapBtn.textContent = '📋 复制 CSS 快照', 1500);
+    } catch (e) {}
+  });
+})();
+</script>
+
 </body>
 </html>
